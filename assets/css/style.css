@@ -121,14 +121,25 @@ section{ padding:96px 0; }
   position:fixed; inset:0 0 auto 0; z-index:100;
   display:flex; align-items:center;
   height:84px;
-  background:rgba(247,241,225,0);
   color:var(--white);
-  transition:background .25s ease, box-shadow .25s ease, height .25s ease, color .25s ease;
+  transition:height .25s ease, color .25s ease;
 }
-.site-header.is-scrolled{
+/* blur lives on a pseudo-element, not the header itself — applying
+   backdrop-filter directly to .site-header would make it a CSS
+   containing block for its position:fixed children (the mobile nav),
+   trapping that full-screen overlay inside the header's own box. */
+.site-header::before{
+  content:""; position:absolute; inset:0; z-index:-1;
+  background:rgba(247,241,225,0);
+  transition:background .25s ease, box-shadow .25s ease;
+  pointer-events:none;
+}
+.site-header.is-scrolled::before{
   background:rgba(247,241,225,.92);
   backdrop-filter:blur(10px);
   box-shadow:0 1px 0 var(--line);
+}
+.site-header.is-scrolled{
   height:72px;
   color:var(--ink);
 }
