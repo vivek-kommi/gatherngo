@@ -102,8 +102,15 @@
     let postcodeController = null;
     let streetController = null;
     let requestToken = 0;
+    let lastFilled = null; // value we just set via a suggestion — don't re-search it
 
     const close = () => {
+      // Invalidate the current request so any fetch still in flight (e.g. the
+      // street/postcode lookup for what was typed before this selection) is
+      // ignored when it resolves, instead of silently reopening the list.
+      requestToken++;
+      if (postcodeController) postcodeController.abort();
+      if (streetController) streetController.abort();
       list.classList.remove('is-open');
       list.innerHTML = '';
       items = [];
@@ -123,9 +130,9 @@
 
     const fillValue = (value) => {
       input.value = value;
+      lastFilled = value;
       close();
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.focus();
+      if (document.activeElement !== input) input.focus();
     };
 
     const chooseAirport = (airport) => fillValue(airport.value);
@@ -242,11 +249,14 @@
     };
 
     input.addEventListener('input', () => {
+      if (input.value === lastFilled) { lastFilled = null; return; }
+      lastFilled = null;
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(runSearch, 380);
     });
 
     input.addEventListener('focus', () => {
+      if (input.value === lastFilled) return;
       if (input.value.trim().length >= 2) runSearch();
     });
 
@@ -259,9 +269,11 @@
         e.preventDefault();
         setActive(Math.max(activeIndex - 1, 0));
       } else if (e.key === 'Enter') {
+        e.preventDefault();
         if (activeIndex >= 0 && items[activeIndex]) {
-          e.preventDefault();
           selectItem(items[activeIndex]);
+        } else {
+          close();
         }
       } else if (e.key === 'Escape') {
         close();
