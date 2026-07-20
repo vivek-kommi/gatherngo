@@ -28,6 +28,7 @@
 
   const PLANE_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M10.5 20.5l1.5-4 1.5 4M2 12l20-7-7 20-2.5-8L2 12z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const PIN_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.7"/></svg>';
+  const HOME_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20V8l8-5 8 5v12M4 20h16M9 20v-6h6v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   const matchAirports = (query) => {
     const q = query.trim().toLowerCase();
@@ -57,12 +58,50 @@
 
   const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+  // Builds a clean "<street>, <town>, <POSTCODE>" line out of a Nominatim
+  // result. Results with no postcode are dropped — we only ever want to
+  // hand back something that satisfies the full-address pattern.
+  const formatNominatimResult = (item) => {
+    const a = item.address || {};
+    if (!a.postcode) return null;
+    const line1 = a.house_number && a.road ? `${a.house_number} ${a.road}`
+      : a.road || a.pedestrian || a.name || a.suburb;
+    if (!line1) return null;
+    const locality = a.village || a.town || a.city || a.suburb || a.city_district || a.county;
+    const parts = [line1];
+    if (locality && locality !== line1) parts.push(locality);
+    parts.push(a.postcode);
+    return { main: parts.join(', '), sub: [a.county, 'UK'].filter(Boolean).join(', ') };
+  };
+
+  const fetchStreetMatches = (query, signal) => {
+    const url = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
+      q: query, format: 'jsonv2', addressdetails: '1', countrycodes: 'gb', limit: '8',
+    });
+    return fetch(url, { signal, headers: { 'Accept-Language': 'en-GB' } })
+      .then(res => res.json())
+      .then(list => {
+        const seen = new Set();
+        const out = [];
+        (list || []).forEach(item => {
+          const formatted = formatNominatimResult(item);
+          if (formatted && !seen.has(formatted.main)) {
+            seen.add(formatted.main);
+            out.push(formatted);
+          }
+        });
+        return out.slice(0, 5);
+      });
+  };
+
   function initLocationField(input) {
     const list = input.closest('.location-field').querySelector('.location-suggestions');
-    let items = []; // flat list of { type, ...data } currently rendered, in DOM order
+    let items = []; // flat list of { type, data } currently rendered, in DOM order
     let activeIndex = -1;
     let debounceTimer = null;
-    let fetchController = null;
+    let postcodeController = null;
+    let streetController = null;
+    let requestToken = 0;
 
     const close = () => {
       list.classList.remove('is-open');
@@ -82,21 +121,24 @@
       }
     };
 
-    const chooseAirport = (airport) => {
-      input.value = airport.value;
+    const fillValue = (value) => {
+      input.value = value;
       close();
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.focus();
     };
 
-    const choosePostcode = (postcode) => {
-      input.value = replaceTrailingToken(input.value, postcode);
-      close();
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.focus();
+    const chooseAirport = (airport) => fillValue(airport.value);
+    const chooseAddress = (addr) => fillValue(addr.main);
+    const choosePostcode = (postcode) => fillValue(replaceTrailingToken(input.value, postcode));
+
+    const selectItem = (item) => {
+      if (item.type === 'airport') chooseAirport(item.data);
+      else if (item.type === 'address') chooseAddress(item.data);
+      else choosePostcode(item.data);
     };
 
-    const render = (airportMatches, postcodeMatches, loading) => {
+    const render = (airportMatches, streetMatches, postcodeMatches, loading) => {
       items = [];
       let html = '';
 
@@ -105,6 +147,14 @@
         airportMatches.forEach(a => {
           items.push({ type: 'airport', data: a });
           html += `<li class="loc-option" role="option" tabindex="-1">${PLANE_ICON}<span class="loc-text"><span class="loc-main">${escapeHtml(a.label)}</span><span class="loc-sub">${escapeHtml(a.postcode)}</span></span></li>`;
+        });
+      }
+
+      if (streetMatches.length) {
+        html += '<li class="loc-group-label" role="presentation">Addresses</li>';
+        streetMatches.forEach(addr => {
+          items.push({ type: 'address', data: addr });
+          html += `<li class="loc-option" role="option" tabindex="-1">${HOME_ICON}<span class="loc-text"><span class="loc-main">${escapeHtml(addr.main)}</span>${addr.sub ? `<span class="loc-sub">${escapeHtml(addr.sub)}</span>` : ''}</span></li>`;
         });
       }
 
@@ -130,42 +180,70 @@
       list.querySelectorAll('.loc-option').forEach((el, i) => {
         el.addEventListener('mousedown', (e) => {
           e.preventDefault();
-          const item = items[i];
-          if (item.type === 'airport') chooseAirport(item.data);
-          else choosePostcode(item.data);
+          selectItem(items[i]);
         });
       });
     };
 
     const runSearch = () => {
       const value = input.value;
+      const trimmed = value.trim();
       const airportMatches = matchAirports(value);
       const candidate = postcodeCandidate(value);
+      const wantsStreetSearch = trimmed.length >= 4;
 
-      if (fetchController) fetchController.abort();
+      if (postcodeController) postcodeController.abort();
+      if (streetController) streetController.abort();
 
-      if (!candidate) {
-        if (!airportMatches.length && value.trim().length < 2) { close(); return; }
-        render(airportMatches, [], false);
+      if (!candidate && !wantsStreetSearch) {
+        if (!airportMatches.length && trimmed.length < 2) { close(); return; }
+        render(airportMatches, [], [], false);
         return;
       }
 
-      render(airportMatches, [], true);
-      fetchController = new AbortController();
-      fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(candidate)}/autocomplete?limit=5`, { signal: fetchController.signal })
-        .then(res => res.json())
-        .then(data => {
-          const postcodeMatches = (data && data.result) || [];
-          render(airportMatches, postcodeMatches, false);
-        })
-        .catch(() => {
-          render(airportMatches, [], false);
-        });
+      const myToken = ++requestToken;
+      let streetMatches = [];
+      let postcodeMatches = [];
+      let pending = 0;
+      const isCurrent = () => myToken === requestToken;
+
+      render(airportMatches, [], [], true);
+
+      if (candidate) {
+        pending++;
+        postcodeController = new AbortController();
+        fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(candidate)}/autocomplete?limit=5`, { signal: postcodeController.signal })
+          .then(res => res.json())
+          .then(data => {
+            if (!isCurrent()) return;
+            postcodeMatches = (data && data.result) || [];
+          })
+          .catch(() => {})
+          .finally(() => {
+            pending--;
+            if (isCurrent()) render(airportMatches, streetMatches, postcodeMatches, pending > 0);
+          });
+      }
+
+      if (wantsStreetSearch) {
+        pending++;
+        streetController = new AbortController();
+        fetchStreetMatches(value, streetController.signal)
+          .then(matches => {
+            if (!isCurrent()) return;
+            streetMatches = matches;
+          })
+          .catch(() => {})
+          .finally(() => {
+            pending--;
+            if (isCurrent()) render(airportMatches, streetMatches, postcodeMatches, pending > 0);
+          });
+      }
     };
 
     input.addEventListener('input', () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(runSearch, 220);
+      debounceTimer = setTimeout(runSearch, 380);
     });
 
     input.addEventListener('focus', () => {
@@ -183,9 +261,7 @@
       } else if (e.key === 'Enter') {
         if (activeIndex >= 0 && items[activeIndex]) {
           e.preventDefault();
-          const item = items[activeIndex];
-          if (item.type === 'airport') chooseAirport(item.data);
-          else choosePostcode(item.data);
+          selectItem(items[activeIndex]);
         }
       } else if (e.key === 'Escape') {
         close();
