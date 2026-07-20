@@ -25,6 +25,7 @@
         <li><a href="#top">Home</a></li>
         <li><a href="#services">Services</a></li>
         <li><a href="#advantages">Advantages</a></li>
+        <li><a href="#fleet">Fleet &amp; fares</a></li>
         <li><a href="#booking">Booking</a></li>
       </ul>
     </nav>
@@ -249,6 +250,76 @@
     </div>
   </section>
 
+  <!-- ================= FLEET & FARE ESTIMATE ================= -->
+  <section class="fleet" id="fleet">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Fleet &amp; fares</span>
+        <h2 class="section-title">Pick a vehicle, see your fare.</h2>
+        <p class="section-lead">Enter your trip and we'll work out a live, mileage-based estimate for every vehicle in the fleet — the same pricing logic our drivers quote from.</p>
+      </div>
+
+      <form class="fare-form" id="fareForm" novalidate>
+        <div class="fare-form-grid">
+          <div class="field field-full">
+            <label for="farePickup">Pickup</label>
+            <div class="location-field">
+              <input id="farePickup" name="pickup" type="text" class="location-input" placeholder="Address with postcode, or an airport terminal" autocomplete="off" required pattern="^.{6,}[\s,]+[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$" title="Enter a full address ending in a postcode, or pick a UK airport terminal from the list" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="farePickup-suggestions" />
+              <ul class="location-suggestions" id="farePickup-suggestions" role="listbox" aria-label="Pickup location suggestions"></ul>
+            </div>
+          </div>
+          <div class="field field-full">
+            <label for="fareDropoff">Drop-off</label>
+            <div class="location-field">
+              <input id="fareDropoff" name="dropoff" type="text" class="location-input" placeholder="Address with postcode, or an airport terminal" autocomplete="off" required pattern="^.{6,}[\s,]+[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$" title="Enter a full address ending in a postcode, or pick a UK airport terminal from the list" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fareDropoff-suggestions" />
+              <ul class="location-suggestions" id="fareDropoff-suggestions" role="listbox" aria-label="Drop-off location suggestions"></ul>
+            </div>
+          </div>
+          <div class="field">
+            <label for="fareDate">Date</label>
+            <input id="fareDate" name="date" type="date" required />
+          </div>
+          <div class="field">
+            <label for="fareTime">Time</label>
+            <input id="fareTime" name="time" type="time" required />
+          </div>
+          <div class="field">
+            <label for="farePassengers">Passengers</label>
+            <select id="farePassengers" name="passengers">
+              <option value="1">1 passenger</option>
+              <option value="2">2 passengers</option>
+              <option value="3">3 passengers</option>
+              <option value="4" selected>4 passengers</option>
+              <option value="5">5 passengers</option>
+              <option value="6">6 passengers</option>
+              <option value="7">7 passengers</option>
+              <option value="8">8 passengers</option>
+              <option value="9">9 passengers</option>
+            </select>
+          </div>
+          <div class="field field-full fare-extras">
+            <label>Extras</label>
+            <div class="fare-extras-options">
+              <label class="checkbox-pill"><input type="checkbox" id="fareExtraLuggage" /> Extra luggage <span>+£5</span></label>
+              <label class="checkbox-pill"><input type="checkbox" id="fareMeetGreet" /> Meet &amp; greet <span>+£15</span></label>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary fare-submit" id="fareSubmit">
+          <span class="fare-submit-label">Get instant estimate</span>
+        </button>
+        <p class="fare-status" id="fareStatus" role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="fare-summary" id="fareSummary" hidden></div>
+
+      <div class="fleet-grid" id="fleetGrid"></div>
+
+      <p class="fleet-disclaimer">Estimates use live driving distance and time, calculated the same way for every quote: base fare + mileage + time + airport fee + any extras you select, with night (22:00–06:00) and weekend/bank-holiday rates applied automatically. Your driver confirms a final fixed price before you travel.</p>
+    </div>
+  </section>
+
   <!-- ================= BOOKING / CONTACT ================= -->
   <section class="booking" id="booking">
     <div class="wrap">
@@ -367,5 +438,6 @@
 
 <script src="assets/js/main.js"></script>
 <script src="assets/js/location-search.js"></script>
+<script src="assets/js/fleet-estimate.js"></script>
 </body>
 </html>

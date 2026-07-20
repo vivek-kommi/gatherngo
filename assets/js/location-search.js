@@ -1,30 +1,38 @@
 (() => {
   // Major UK airports we actually send transfers to/from, with real terminals
   // and postcodes so a selected suggestion always reads as a full address.
+  // lat/lon are airport-level (not per-terminal) — plenty precise for a
+  // mileage estimate. charge is the airport pickup/drop-off fee used by the
+  // fare estimator; the four named in the brief plus sensible defaults for
+  // the rest ("other airports = configurable").
   const AIRPORTS = [
-    { code: 'LHR', name: 'London Heathrow Airport', terminal: 'Terminal 2', postcode: 'TW6 1EW' },
-    { code: 'LHR', name: 'London Heathrow Airport', terminal: 'Terminal 3', postcode: 'TW6 2ER' },
-    { code: 'LHR', name: 'London Heathrow Airport', terminal: 'Terminal 4', postcode: 'TW6 3XA' },
-    { code: 'LHR', name: 'London Heathrow Airport', terminal: 'Terminal 5', postcode: 'TW6 2GA' },
-    { code: 'LGW', name: 'London Gatwick Airport', terminal: 'North Terminal', postcode: 'RH6 0PJ' },
-    { code: 'LGW', name: 'London Gatwick Airport', terminal: 'South Terminal', postcode: 'RH6 0NP' },
-    { code: 'STN', name: 'London Stansted Airport', terminal: null, postcode: 'CM24 1QW' },
-    { code: 'LTN', name: 'London Luton Airport', terminal: null, postcode: 'LU2 9LY' },
-    { code: 'LCY', name: 'London City Airport', terminal: null, postcode: 'E16 2PX' },
-    { code: 'CBG', name: 'Cambridge Airport', terminal: null, postcode: 'CB5 8RX' },
-    { code: 'BHX', name: 'Birmingham Airport', terminal: null, postcode: 'B26 3QJ' },
-    { code: 'MAN', name: 'Manchester Airport', terminal: 'Terminal 1', postcode: 'M90 1QX' },
-    { code: 'MAN', name: 'Manchester Airport', terminal: 'Terminal 2', postcode: 'M90 1QX' },
-    { code: 'MAN', name: 'Manchester Airport', terminal: 'Terminal 3', postcode: 'M90 4EF' },
-    { code: 'SEN', name: 'Southend Airport', terminal: null, postcode: 'SS2 6YF' },
-    { code: 'EMA', name: 'East Midlands Airport', terminal: null, postcode: 'DE74 2SA' },
-    { code: 'BRS', name: 'Bristol Airport', terminal: null, postcode: 'BS48 3DY' },
-    { code: 'NWI', name: 'Norwich Airport', terminal: null, postcode: 'NR6 6JA' },
+    { code: 'LHR', name: 'London Heathrow Airport', terminal: 'Terminal 2', postcode: 'TW6 1EW', lat: 51.4700, lon: -0.4543, charge: 8 },
+    { code: 'LHR', name: 'London Heathrow Airport', terminal: 'Terminal 3', postcode: 'TW6 2ER', lat: 51.4700, lon: -0.4543, charge: 8 },
+    { code: 'LHR', name: 'London Heathrow Airport', terminal: 'Terminal 4', postcode: 'TW6 3XA', lat: 51.4700, lon: -0.4543, charge: 8 },
+    { code: 'LHR', name: 'London Heathrow Airport', terminal: 'Terminal 5', postcode: 'TW6 2GA', lat: 51.4700, lon: -0.4543, charge: 8 },
+    { code: 'LGW', name: 'London Gatwick Airport', terminal: 'North Terminal', postcode: 'RH6 0PJ', lat: 51.1537, lon: -0.1821, charge: 10 },
+    { code: 'LGW', name: 'London Gatwick Airport', terminal: 'South Terminal', postcode: 'RH6 0NP', lat: 51.1537, lon: -0.1821, charge: 10 },
+    { code: 'STN', name: 'London Stansted Airport', terminal: null, postcode: 'CM24 1QW', lat: 51.8860, lon: 0.2389, charge: 7 },
+    { code: 'LTN', name: 'London Luton Airport', terminal: null, postcode: 'LU2 9LY', lat: 51.8747, lon: -0.3683, charge: 7 },
+    { code: 'LCY', name: 'London City Airport', terminal: null, postcode: 'E16 2PX', lat: 51.5048, lon: 0.0495, charge: 6 },
+    { code: 'CBG', name: 'Cambridge Airport', terminal: null, postcode: 'CB5 8RX', lat: 52.2050, lon: 0.1750, charge: 5 },
+    { code: 'BHX', name: 'Birmingham Airport', terminal: null, postcode: 'B26 3QJ', lat: 52.4539, lon: -1.7480, charge: 6 },
+    { code: 'MAN', name: 'Manchester Airport', terminal: 'Terminal 1', postcode: 'M90 1QX', lat: 53.3537, lon: -2.2750, charge: 7 },
+    { code: 'MAN', name: 'Manchester Airport', terminal: 'Terminal 2', postcode: 'M90 1QX', lat: 53.3537, lon: -2.2750, charge: 7 },
+    { code: 'MAN', name: 'Manchester Airport', terminal: 'Terminal 3', postcode: 'M90 4EF', lat: 53.3537, lon: -2.2750, charge: 7 },
+    { code: 'SEN', name: 'Southend Airport', terminal: null, postcode: 'SS2 6YF', lat: 51.5714, lon: 0.6956, charge: 6 },
+    { code: 'EMA', name: 'East Midlands Airport', terminal: null, postcode: 'DE74 2SA', lat: 52.8311, lon: -1.3281, charge: 6 },
+    { code: 'BRS', name: 'Bristol Airport', terminal: null, postcode: 'BS48 3DY', lat: 51.3827, lon: -2.7191, charge: 6 },
+    { code: 'NWI', name: 'Norwich Airport', terminal: null, postcode: 'NR6 6JA', lat: 52.6758, lon: 1.2828, charge: 6 },
   ].map(a => ({
     ...a,
     label: a.terminal ? `${a.name}, ${a.terminal}` : a.name,
     value: a.terminal ? `${a.name}, ${a.terminal}, ${a.postcode}` : `${a.name}, ${a.postcode}`,
   }));
+
+  // Shared with the fare estimator (assets/js/fleet-estimate.js) so both
+  // scripts work off one airport dataset.
+  window.GNG_AIRPORTS = AIRPORTS;
 
   const PLANE_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M10.5 20.5l1.5-4 1.5 4M2 12l20-7-7 20-2.5-8L2 12z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const PIN_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.7"/></svg>';
