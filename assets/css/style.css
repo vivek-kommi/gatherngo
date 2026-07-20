@@ -239,6 +239,36 @@ section{ padding:96px 0; }
 .field input:focus, .field select:focus{ border-color:var(--plum); box-shadow:0 0 0 3px var(--plum-tint); outline:none; }
 .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .quote-note{ font-size:.78rem; color:var(--ink-soft); text-align:center; margin-top:4px; }
+.field-hint{ font-size:.74rem; color:var(--ink-soft); opacity:.8; }
+
+/* ---------- location search (address / postcode / airport) ---------- */
+.location-field{ position:relative; }
+.location-input{ width:100%; }
+.location-input:invalid:not(:placeholder-shown){ border-color:#c0503f; }
+.location-suggestions{
+  position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:20;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--radius-sm);
+  box-shadow:var(--shadow-card); max-height:288px; overflow-y:auto;
+  padding:6px; display:none;
+}
+.location-suggestions.is-open{ display:block; }
+.location-suggestions .loc-group-label{
+  font-family:var(--font-mono); font-size:.64rem; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-soft); padding:8px 10px 4px;
+}
+.location-suggestions .loc-empty{
+  padding:10px; font-size:.85rem; color:var(--ink-soft);
+}
+.loc-option{
+  display:flex; align-items:flex-start; gap:10px; width:100%; text-align:left;
+  padding:9px 10px; border-radius:8px; font-size:.88rem; color:var(--ink); background:none; border:none;
+  cursor:pointer;
+}
+.loc-option:hover, .loc-option.is-active{ background:var(--paper); }
+.loc-option .loc-icon{ flex-shrink:0; margin-top:2px; color:var(--plum); }
+.loc-option .loc-text{ display:grid; }
+.loc-option .loc-main{ font-weight:600; }
+.loc-option .loc-sub{ font-size:.76rem; color:var(--ink-soft); margin-top:1px; }
 
 @media (max-width:900px){
   .hero-grid{ grid-template-columns:1fr; }

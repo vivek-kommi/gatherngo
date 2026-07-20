@@ -67,11 +67,19 @@
           <div class="quote-form">
             <div class="field">
               <label for="pickup">Pickup location</label>
-              <input id="pickup" name="pickup" type="text" placeholder="e.g. 6 Taskers Field, Caxton" required />
+              <div class="location-field">
+                <input id="pickup" name="pickup" type="text" class="location-input" placeholder="Address with postcode, or an airport terminal" autocomplete="off" required pattern="^.{6,}[\s,]+[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$" title="Enter a full address ending in a postcode, or pick a UK airport terminal from the list" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pickup-suggestions" />
+                <ul class="location-suggestions" id="pickup-suggestions" role="listbox" aria-label="Pickup location suggestions"></ul>
+              </div>
+              <span class="field-hint">Full address with postcode, or a UK airport + terminal</span>
             </div>
             <div class="field">
               <label for="dropoff">Drop-off / destination</label>
-              <input id="dropoff" name="dropoff" type="text" placeholder="e.g. Stansted Airport, Terminal 1" required />
+              <div class="location-field">
+                <input id="dropoff" name="dropoff" type="text" class="location-input" placeholder="Address with postcode, or an airport terminal" autocomplete="off" required pattern="^.{6,}[\s,]+[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$" title="Enter a full address ending in a postcode, or pick a UK airport terminal from the list" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="dropoff-suggestions" />
+                <ul class="location-suggestions" id="dropoff-suggestions" role="listbox" aria-label="Drop-off location suggestions"></ul>
+              </div>
+              <span class="field-hint">Full address with postcode, or a UK airport + terminal</span>
             </div>
             <div class="field-row">
               <div class="field">
@@ -281,11 +289,17 @@
           <div class="field-row">
             <div class="field">
               <label for="pickup2">Pickup</label>
-              <input id="pickup2" name="pickup" type="text" placeholder="Pickup location" required />
+              <div class="location-field">
+                <input id="pickup2" name="pickup" type="text" class="location-input" placeholder="Address or airport terminal" autocomplete="off" required pattern="^.{6,}[\s,]+[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$" title="Enter a full address ending in a postcode, or pick a UK airport terminal from the list" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pickup2-suggestions" />
+                <ul class="location-suggestions" id="pickup2-suggestions" role="listbox" aria-label="Pickup location suggestions"></ul>
+              </div>
             </div>
             <div class="field">
               <label for="dropoff2">Drop-off</label>
-              <input id="dropoff2" name="dropoff" type="text" placeholder="Destination" required />
+              <div class="location-field">
+                <input id="dropoff2" name="dropoff" type="text" class="location-input" placeholder="Address or airport terminal" autocomplete="off" required pattern="^.{6,}[\s,]+[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$" title="Enter a full address ending in a postcode, or pick a UK airport terminal from the list" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="dropoff2-suggestions" />
+                <ul class="location-suggestions" id="dropoff2-suggestions" role="listbox" aria-label="Drop-off location suggestions"></ul>
+              </div>
             </div>
           </div>
           <div class="field-row">
@@ -352,5 +366,6 @@
 </footer>
 
 <script src="assets/js/main.js"></script>
+<script src="assets/js/location-search.js"></script>
 </body>
 </html>
