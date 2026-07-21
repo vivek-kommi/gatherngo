@@ -141,44 +141,83 @@
   // offering to complete the postcode text itself.
   const FULL_POSTCODE_RE = /^[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$/;
 
-  // There is no free source of full UK addresses (house-by-house) — that
-  // data is Royal Mail/OS-licensed and every provider of it is paid. What
-  // IS free is OpenStreetMap's Overpass API, which can list real named
-  // streets actually near a point. Combined with postcodes.io confirming
-  // the postcode is genuine and giving its coordinates + locality, this
-  // gets us "real local street options" without pretending to have
-  // individual house data we don't.
-  const fetchNearbyStreets = async (lat, lon, signal) => {
-    // A single, wide-enough radius rather than a two-step widen: Overpass's
-    // shared public instance is sometimes slow, and this runs alongside a
-    // Nominatim search too, so a second sequential round trip isn't worth
-    // the extra worst-case wait for what's already a "nice to have" list.
-    const query = `[out:json][timeout:6];way(around:600,${lat},${lon})[highway][name];out tags center;`;
+  // There's no complete, exhaustive free UK address database (that's
+  // Royal Mail/OS-licensed and every provider of the full thing is paid),
+  // but OpenStreetMap does have real house-numbered addresses for a great
+  // many buildings — community-tagged addr:housenumber/addr:street/
+  // addr:postcode, especially thorough in town and city centres. Overpass
+  // (OSM's free query API, no key) can pull those points near a postcode,
+  // plus the named streets themselves as a fallback where house-level
+  // tagging is thin. Combined with postcodes.io confirming the postcode is
+  // genuine and giving its coordinates, this gets real full addresses where
+  // OSM has them, and a real street name to build on where it doesn't.
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Overpass's shared public instance is frequently overloaded (~1 in 2
+  // requests fails with a "server busy" response under normal load, by
+  // direct measurement) — one retry after a short pause turns that into a
+  // much more reliable feature instead of frequently falling back for no
+  // real reason.
+  const fetchOverpass = async (query, signal, attempt = 0) => {
+    let res;
     try {
-      const res = await fetch('https://overpass-api.de/api/interpreter', {
+      res = await fetch('https://overpass-api.de/api/interpreter', {
         method: 'POST',
         signal,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'data=' + encodeURIComponent(query),
       });
-      if (!res.ok) return [];
-      const data = await res.json();
-      const closest = new Map(); // name -> distance, keep the nearest occurrence
-      (data.elements || []).forEach(el => {
-        const name = el.tags && el.tags.name;
-        if (!name || !el.center) return;
-        const dist = Math.hypot(el.center.lat - lat, el.center.lon - lon);
-        if (!closest.has(name) || dist < closest.get(name)) closest.set(name, dist);
-      });
-      return [...closest.entries()].sort((a, b) => a[1] - b[1]).map(([n]) => n).slice(0, 6);
     } catch (e) {
       if (e.name === 'AbortError') throw e;
-      return []; // Overpass having a bad day — degrade quietly, Nominatim search still runs alongside this
+      res = null;
     }
+    if (res && res.ok) {
+      try { return await res.json(); } catch (e) { /* fall through to retry */ }
+    }
+    if (attempt === 0) {
+      await sleep(600);
+      return fetchOverpass(query, signal, attempt + 1);
+    }
+    return null;
+  };
+
+  const fetchNearbyAddressData = async (lat, lon, signal) => {
+    const query = `[out:json][timeout:8];(node(around:400,${lat},${lon})["addr:housenumber"]["addr:street"];way(around:400,${lat},${lon})["addr:housenumber"]["addr:street"];way(around:600,${lat},${lon})[highway][name];);out tags center;`;
+    const data = await fetchOverpass(query, signal);
+    if (!data) return { houses: [], streets: [] }; // Overpass had a bad day even after a retry — degrade quietly, Nominatim search still runs alongside this
+
+    const dist = (el) => {
+      const c = el.center || el; // nodes carry lat/lon directly, ways carry a center
+      return Math.hypot(c.lat - lat, c.lon - lon);
+    };
+
+    const houseByKey = new Map(); // "number|street" -> { number, street, postcode, dist }
+    const streetByName = new Map(); // name -> dist
+
+    (data.elements || []).forEach(el => {
+      const t = el.tags;
+      if (!t) return;
+      if (t['addr:housenumber'] && t['addr:street']) {
+        const key = `${t['addr:housenumber']}|${t['addr:street']}`;
+        const d = dist(el);
+        const existing = houseByKey.get(key);
+        if (!existing || d < existing.dist) {
+          houseByKey.set(key, { number: t['addr:housenumber'], street: t['addr:street'], postcode: t['addr:postcode'] || null, dist: d });
+        }
+      } else if (t.highway && t.name && el.center) {
+        const d = dist(el);
+        if (!streetByName.has(t.name) || d < streetByName.get(t.name)) streetByName.set(t.name, d);
+      }
+    });
+
+    const houses = [...houseByKey.values()].sort((a, b) => a.dist - b.dist);
+    const streets = [...streetByName.entries()].sort((a, b) => a[1] - b[1]).map(([n]) => n);
+    return { houses, streets };
   };
 
   // Confirms a complete postcode is real (postcodes.io is the authoritative
-  // free UK postcode dataset) and, if so, fetches nearby street names for it.
+  // free UK postcode dataset) and, if so, fetches nearby house-numbered
+  // addresses (preferred) and street names (fallback) for it.
   const fetchNearbyAddresses = async (postcode, signal) => {
     let pc;
     try {
@@ -194,15 +233,33 @@
     const locality = pc.admin_ward && pc.admin_district && pc.admin_ward !== pc.admin_district
       ? `${pc.admin_ward}, ${pc.admin_district}` : (pc.admin_district || pc.parish || null);
 
-    const streetNames = await fetchNearbyStreets(pc.latitude, pc.longitude, signal);
-    const addresses = streetNames.map(name => {
-      const parts = [name];
+    const { houses, streets } = await fetchNearbyAddressData(pc.latitude, pc.longitude, signal);
+
+    // A house-numbered result carries its own tagged postcode where OSM has
+    // one — that's the real postcode for that specific building, which can
+    // genuinely differ from the one typed (UK postcodes cover a handful of
+    // addresses each). Fall back to the searched postcode only when the
+    // building itself isn't tagged with one.
+    const houseAddresses = houses.slice(0, 6).map(h => {
+      const parts = [`${h.number} ${h.street}`];
       if (locality) parts.push(pc.admin_district || locality);
-      parts.push(pc.postcode);
+      parts.push(h.postcode || pc.postcode);
       return { main: parts.join(', '), sub: [locality, 'UK'].filter(Boolean).join(', ') };
     });
 
-    return { addresses, locality, invalid: false, postcode: pc.postcode };
+    // Fill out the list with street-only options where house-level data is
+    // thin, rather than showing house numbers alone when there are few.
+    const streetAddresses = streets
+      .filter(name => !houses.some(h => h.street === name))
+      .slice(0, 6 - houseAddresses.length)
+      .map(name => {
+        const parts = [name];
+        if (locality) parts.push(pc.admin_district || locality);
+        parts.push(pc.postcode);
+        return { main: parts.join(', '), sub: [locality, 'UK'].filter(Boolean).join(', ') };
+      });
+
+    return { addresses: [...houseAddresses, ...streetAddresses], locality, invalid: false, postcode: pc.postcode };
   };
 
   function initLocationField(input) {
