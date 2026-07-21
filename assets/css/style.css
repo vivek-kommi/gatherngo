@@ -239,6 +239,22 @@ section{ padding:96px 0; }
 .field input:focus, .field select:focus{ border-color:var(--plum); box-shadow:0 0 0 3px var(--plum-tint); outline:none; }
 .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .quote-note{ font-size:.78rem; color:var(--ink-soft); text-align:center; margin-top:4px; }
+
+.hero-estimate{ display:grid; gap:8px; }
+.hero-estimate-btn{ font-size:.85rem; padding:11px 14px; }
+.hero-estimate-result{
+  font-size:.85rem; border-radius:var(--radius-sm); padding:12px 14px;
+  background:var(--paper); border:1px solid var(--line); animation:cardIn .25s ease both;
+}
+.hero-estimate-result.is-loading{ color:var(--ink-soft); font-style:italic; }
+.hero-estimate-result.is-error{ color:#b5432f; background:#fbeeec; border-color:#f0c9c2; font-weight:600; font-style:normal; }
+.hero-estimate-result.is-ready{ background:var(--plum-tint); border-color:transparent; }
+.hero-estimate-price{ display:flex; justify-content:space-between; align-items:baseline; font-family:var(--font-mono); gap:10px; }
+.hero-estimate-price span{ font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
+.hero-estimate-price strong{ font-size:1.25rem; color:var(--plum); white-space:nowrap; }
+.hero-estimate-price strong small{ font-size:.62rem; font-weight:500; text-transform:uppercase; color:var(--ink-soft); }
+.hero-estimate-meta{ margin-top:6px; font-size:.76rem; color:var(--ink-soft); display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.hero-estimate-meta a{ color:var(--plum); font-weight:700; }
 .field-hint{ font-size:.74rem; color:var(--ink-soft); opacity:.8; }
 
 /* ---------- location search (address / postcode / airport) ---------- */

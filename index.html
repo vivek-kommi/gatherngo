@@ -102,6 +102,13 @@
                 <option>5+ passengers</option>
               </select>
             </div>
+            <div class="hero-estimate">
+              <button type="button" class="btn btn-ghost btn-block hero-estimate-btn" id="heroEstimateBtn">
+                <span class="hero-estimate-btn-label">See estimated fare</span>
+              </button>
+              <div class="hero-estimate-result" id="heroEstimateResult" hidden></div>
+              <input type="hidden" name="estimate" id="heroEstimateField" />
+            </div>
             <button type="submit" class="btn btn-primary btn-block">Request on WhatsApp</button>
             <p class="quote-note">Opens WhatsApp with your trip details pre-filled — no account needed.</p>
           </div>
@@ -438,6 +445,8 @@
 
 <script src="assets/js/main.js"></script>
 <script src="assets/js/location-search.js"></script>
+<script src="assets/js/fare-engine.js"></script>
 <script src="assets/js/fleet-estimate.js"></script>
+<script src="assets/js/hero-estimate.js"></script>
 </body>
 </html>

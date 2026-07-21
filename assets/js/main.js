@@ -71,6 +71,7 @@
     if (data.date) lines.push(`Date: ${data.date}`);
     if (data.time) lines.push(`Time: ${data.time}`);
     if (data.passengers) lines.push(`Passengers: ${data.passengers}`);
+    if (data.estimate) lines.push(data.estimate);
     return lines.join('\n');
   };
   const wireQuoteForm = (form) => {
