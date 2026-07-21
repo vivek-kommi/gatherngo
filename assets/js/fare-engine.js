@@ -4,14 +4,8 @@ window.GNGFare = (() => {
   // Mileage/time/airport/extras are identical for every vehicle — only the
   // large-vehicle surcharge and minimum fare differ, per the brief.
   const VEHICLES = [
-    { id: 'standard', name: 'Standard Car', tag: 'Saloon', passengers: 4, largeVehicle: false, minimumFare: 25,
-      luggage: [{ cases: 2, bags: 1 }, { cases: 1, bags: 2 }], maxItems: 3 },
-    { id: 'estate', name: 'Estate', tag: 'Estate car', passengers: 4, largeVehicle: false, minimumFare: 27,
-      luggage: [{ cases: 2, bags: 2 }, { cases: 3, bags: 1 }, { cases: 1, bags: 3 }], maxItems: 4 },
     { id: 'five', name: '5 Seater', tag: 'MPV', passengers: 5, largeVehicle: false, minimumFare: 32,
       luggage: [{ cases: 2, bags: 2 }], maxItems: 4 },
-    { id: 'eight', name: '8 Seater', tag: 'Minibus', passengers: 8, largeVehicle: true, minimumFare: 45,
-      luggage: [{ cases: 8, bags: 0 }, { cases: 6, bags: 2 }, { cases: 5, bags: 3 }], maxItems: 8 },
     { id: 'nine', name: '9 Seater', tag: 'Minibus', passengers: 9, largeVehicle: true, minimumFare: 48,
       luggage: [{ cases: 9, bags: 0 }, { cases: 7, bags: 2 }, { cases: 6, bags: 3 }], maxItems: 9 },
   ];

@@ -12,7 +12,10 @@
   const dateEl = document.getElementById('date');
   const timeEl = document.getElementById('time');
 
-  const standard = Fare.VEHICLES.find(v => v.id === 'standard');
+  // Quick hero estimate quotes whichever vehicle is smallest/cheapest in
+  // the current fleet, rather than a hardcoded id — stays correct if the
+  // lineup changes.
+  const defaultVehicle = Fare.VEHICLES[0];
 
   const show = (html, tone) => {
     resultEl.innerHTML = html;
@@ -42,7 +45,7 @@
         pickup: pickupEl.value, dropoff: dropoffEl.value, date: dateEl.value, time: timeEl.value,
         extraLuggage: false, meetAndGreet: false,
       });
-      const oneWay = Fare.finalizeFare(base, { largeVehicle: standard.largeVehicle, night, weekend, minimumFare: standard.minimumFare });
+      const oneWay = Fare.finalizeFare(base, { largeVehicle: defaultVehicle.largeVehicle, night, weekend, minimumFare: defaultVehicle.minimumFare });
       const ret = oneWay * 2;
 
       const notes = [];
@@ -52,7 +55,7 @@
 
       show(`
         <div class="hero-estimate-price">
-          <span>Standard Car, estimated</span>
+          <span>${defaultVehicle.name}, estimated</span>
           <strong>${Fare.money(oneWay)} <small>one way</small></strong>
         </div>
         <div class="hero-estimate-meta">
@@ -61,7 +64,7 @@
         </div>
       `, 'ready');
 
-      hiddenField.value = `Estimated fare (Standard Car): ${Fare.money(oneWay)} one way / ${Fare.money(ret)} return`;
+      hiddenField.value = `Estimated fare (${defaultVehicle.name}): ${Fare.money(oneWay)} one way / ${Fare.money(ret)} return`;
     } catch (err) {
       show(err.message || "Couldn't calculate a live fare for that route — we'll quote you directly.", 'error');
     } finally {
