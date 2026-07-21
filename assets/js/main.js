@@ -95,6 +95,5 @@
       window.open(url, '_blank', 'noopener');
     });
   };
-  wireQuoteForm(document.getElementById('quoteForm'));
   wireQuoteForm(document.getElementById('quoteForm2'));
 })();

@@ -269,21 +269,6 @@ section{ padding:96px 0; }
 .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .quote-note{ font-size:.78rem; color:var(--ink-soft); text-align:center; margin-top:4px; }
 
-.hero-estimate{ display:grid; gap:8px; }
-.hero-estimate-btn{ font-size:.85rem; padding:11px 14px; }
-.hero-estimate-result{
-  font-size:.85rem; border-radius:var(--radius-sm); padding:12px 14px;
-  background:var(--paper); border:1px solid var(--line); animation:cardIn .25s ease both;
-}
-.hero-estimate-result.is-loading{ color:var(--ink-soft); font-style:italic; }
-.hero-estimate-result.is-error{ color:#b5432f; background:#fbeeec; border-color:#f0c9c2; font-weight:600; font-style:normal; }
-.hero-estimate-result.is-ready{ background:var(--plum-tint); border-color:transparent; }
-.hero-estimate-price{ display:flex; justify-content:space-between; align-items:baseline; font-family:var(--font-mono); gap:10px; }
-.hero-estimate-price span{ font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
-.hero-estimate-price strong{ font-size:1.25rem; color:var(--plum); white-space:nowrap; }
-.hero-estimate-price strong small{ font-size:.62rem; font-weight:500; text-transform:uppercase; color:var(--ink-soft); }
-.hero-estimate-meta{ margin-top:6px; font-size:.76rem; color:var(--ink-soft); display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-.hero-estimate-meta a{ color:var(--plum); font-weight:700; }
 .field-hint{ font-size:.74rem; color:var(--ink-soft); opacity:.8; }
 
 /* ---------- location search (address / postcode / airport) ---------- */
@@ -640,16 +625,11 @@ section{ padding:96px 0; }
 @media (max-width:560px){ .process-grid{ grid-template-columns:1fr; } }
 
 /* ============================================================
-   Fleet & fare estimate
+   Fleet & fare estimate — results sit directly under the hero's quote
+   card, not in a separate section further down the page, so booking a
+   fare never requires scrolling to find it.
    ============================================================ */
-.fleet{ background:var(--paper); }
-
-.fare-form{
-  background:var(--paper-2); border-radius:var(--radius-lg); padding:32px;
-  box-shadow:var(--shadow-card); margin-bottom:44px;
-}
-.fare-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px 20px; }
-.field-full{ grid-column:1 / -1; }
+.fleet-results{ background:var(--paper); padding-top:56px; }
 
 .fare-extras-options{ display:flex; gap:10px; flex-wrap:wrap; margin-top:2px; }
 .checkbox-pill{
@@ -660,9 +640,6 @@ section{ padding:96px 0; }
 .checkbox-pill:has(input:checked){ border-color:var(--plum); background:var(--plum-tint); }
 .checkbox-pill input{ accent-color:var(--plum); width:16px; height:16px; }
 .checkbox-pill span{ font-family:var(--font-mono); font-size:.72rem; color:var(--plum); font-weight:700; }
-
-.fare-submit{ margin-top:26px; width:100%; justify-content:center; }
-@media (min-width:640px){ .fare-submit{ width:auto; padding-inline:44px; } }
 
 .fare-status{ margin-top:12px; font-size:.85rem; color:var(--ink-soft); min-height:1.3em; }
 .fare-status.is-error{ color:#b5432f; font-weight:600; }
@@ -751,8 +728,3 @@ section{ padding:96px 0; }
 .fleet-book:disabled:hover{ background:var(--plum); }
 
 .fleet-disclaimer{ margin-top:28px; font-size:.78rem; color:var(--ink-soft); max-width:70ch; }
-
-@media (max-width:640px){
-  .fare-form{ padding:22px 18px; }
-  .fare-form-grid{ grid-template-columns:1fr; }
-}

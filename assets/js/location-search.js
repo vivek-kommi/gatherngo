@@ -71,8 +71,6 @@
   // real geocoded address from the list. Typing something that merely looks
   // right (or completing just the postcode) is not enough: we want a
   // genuine full address, not a shape that happens to match the pattern.
-  // Stored on the element itself (not a closure var) so trip-sync.js can
-  // carry the flag across when it copies a value into the paired field.
   const applyVerified = (input, ok) => {
     input.dataset.verified = ok ? 'true' : 'false';
     if (ok || input.value.trim() === '') {
@@ -81,7 +79,6 @@
       input.setCustomValidity('Choose a full address from the list, or an airport terminal.');
     }
   };
-  window.GNGSetLocationVerified = applyVerified;
 
   // Builds a clean "<street>, <town>, <POSTCODE>" line out of a Nominatim
   // result. Results with no postcode or no specific street are dropped —
@@ -306,10 +303,6 @@
       applyVerified(input, verified);
       close();
       if (document.activeElement !== input) input.focus();
-      // Deliberately not a real 'input' event — that would re-trigger this
-      // field's own search and reopen the list. Other listeners (trip-sync)
-      // that need to know the value changed listen for this instead.
-      input.dispatchEvent(new CustomEvent('locationsync', { bubbles: true }));
     };
 
     // Airport terminals and geocoded addresses are complete, real places —
