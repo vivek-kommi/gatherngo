@@ -27,7 +27,7 @@
       <article class="fleet-card" data-vehicle="${v.id}">
         <div class="fleet-card-head">
           <h3>${v.name}</h3>
-          <span class="fleet-tag">${v.tag}</span>
+          ${v.tag ? `<span class="fleet-tag">${v.tag}</span>` : ''}
         </div>
         <div class="fleet-capacity">
           <span class="cap-people">${PERSON_ICON}<span>× ${v.passengers}</span></span>

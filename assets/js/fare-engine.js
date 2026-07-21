@@ -4,10 +4,10 @@ window.GNGFare = (() => {
   // Mileage/time/airport/extras are identical for every vehicle — only the
   // large-vehicle surcharge and minimum fare differ, per the brief.
   const VEHICLES = [
-    { id: 'five', name: '5 Seater', tag: 'MPV', passengers: 5, largeVehicle: false, minimumFare: 32,
-      luggage: [{ cases: 2, bags: 2 }], maxItems: 4 },
-    { id: 'nine', name: '9 Seater', tag: 'Minibus', passengers: 9, largeVehicle: true, minimumFare: 48,
-      luggage: [{ cases: 9, bags: 0 }, { cases: 7, bags: 2 }, { cases: 6, bags: 3 }], maxItems: 9 },
+    { id: 'five', name: '5 Seater', tag: '', passengers: 4, largeVehicle: false, minimumFare: 32,
+      luggage: [{ cases: 3, bags: 2 }], maxItems: 5 },
+    { id: 'nine', name: '9 Seater', tag: 'Minibus', passengers: 8, largeVehicle: true, minimumFare: 48,
+      luggage: [{ cases: 8, bags: 0 }, { cases: 6, bags: 2 }, { cases: 4, bags: 4 }], maxItems: 8 },
   ];
 
   // 2026 England & Wales bank holidays. A short, honest list rather than a
