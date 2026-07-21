@@ -134,6 +134,77 @@
       });
   };
 
+  // A *complete* UK postcode (as opposed to postcodeCandidate's looser
+  // "start of a postcode" match, which also fires on partial prefixes like
+  // "CB2 1"). Once someone's finished typing a real postcode we can look up
+  // exactly where it is and search around that point, instead of just
+  // offering to complete the postcode text itself.
+  const FULL_POSTCODE_RE = /^[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$/;
+
+  // There is no free source of full UK addresses (house-by-house) — that
+  // data is Royal Mail/OS-licensed and every provider of it is paid. What
+  // IS free is OpenStreetMap's Overpass API, which can list real named
+  // streets actually near a point. Combined with postcodes.io confirming
+  // the postcode is genuine and giving its coordinates + locality, this
+  // gets us "real local street options" without pretending to have
+  // individual house data we don't.
+  const fetchNearbyStreets = async (lat, lon, signal) => {
+    // A single, wide-enough radius rather than a two-step widen: Overpass's
+    // shared public instance is sometimes slow, and this runs alongside a
+    // Nominatim search too, so a second sequential round trip isn't worth
+    // the extra worst-case wait for what's already a "nice to have" list.
+    const query = `[out:json][timeout:6];way(around:600,${lat},${lon})[highway][name];out tags center;`;
+    try {
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        signal,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query),
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      const closest = new Map(); // name -> distance, keep the nearest occurrence
+      (data.elements || []).forEach(el => {
+        const name = el.tags && el.tags.name;
+        if (!name || !el.center) return;
+        const dist = Math.hypot(el.center.lat - lat, el.center.lon - lon);
+        if (!closest.has(name) || dist < closest.get(name)) closest.set(name, dist);
+      });
+      return [...closest.entries()].sort((a, b) => a[1] - b[1]).map(([n]) => n).slice(0, 6);
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      return []; // Overpass having a bad day — degrade quietly, Nominatim search still runs alongside this
+    }
+  };
+
+  // Confirms a complete postcode is real (postcodes.io is the authoritative
+  // free UK postcode dataset) and, if so, fetches nearby street names for it.
+  const fetchNearbyAddresses = async (postcode, signal) => {
+    let pc;
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`, { signal });
+      const data = await res.json();
+      if (data.status !== 200 || !data.result) return { addresses: [], locality: null, invalid: true, postcode };
+      pc = data.result;
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      return { addresses: [], locality: null, invalid: false, postcode };
+    }
+
+    const locality = pc.admin_ward && pc.admin_district && pc.admin_ward !== pc.admin_district
+      ? `${pc.admin_ward}, ${pc.admin_district}` : (pc.admin_district || pc.parish || null);
+
+    const streetNames = await fetchNearbyStreets(pc.latitude, pc.longitude, signal);
+    const addresses = streetNames.map(name => {
+      const parts = [name];
+      if (locality) parts.push(pc.admin_district || locality);
+      parts.push(pc.postcode);
+      return { main: parts.join(', '), sub: [locality, 'UK'].filter(Boolean).join(', ') };
+    });
+
+    return { addresses, locality, invalid: false, postcode: pc.postcode };
+  };
+
   function initLocationField(input) {
     const list = input.closest('.location-field').querySelector('.location-suggestions');
     let items = []; // flat list of { type, data } currently rendered, in DOM order
@@ -141,6 +212,7 @@
     let debounceTimer = null;
     let postcodeController = null;
     let streetController = null;
+    let nearbyController = null;
     let requestToken = 0;
     let lastFilled = null; // value we just set via a suggestion — don't re-search it
 
@@ -153,6 +225,7 @@
       requestToken++;
       if (postcodeController) postcodeController.abort();
       if (streetController) streetController.abort();
+      if (nearbyController) nearbyController.abort();
       list.classList.remove('is-open');
       list.innerHTML = '';
       items = [];
@@ -196,7 +269,7 @@
       else choosePostcode(item.data);
     };
 
-    const render = (airportMatches, streetMatches, postcodeMatches, loading, areaHint) => {
+    const render = (airportMatches, streetMatches, postcodeMatches, loading, notice) => {
       items = [];
       let html = '';
 
@@ -227,8 +300,8 @@
       if (!items.length) {
         if (loading) {
           html = '<li class="loc-empty">Searching…</li>';
-        } else if (areaHint) {
-          html = `<li class="loc-empty loc-hint">"${escapeHtml(areaHint)}" is an area, not a specific address — add a street name or postcode, e.g. "High Street, ${escapeHtml(areaHint)}".</li>`;
+        } else if (notice) {
+          html = `<li class="loc-empty loc-hint">${notice}</li>`;
         } else {
           html = '<li class="loc-empty">No matches yet — keep typing the full address or postcode.</li>';
         }
@@ -252,10 +325,12 @@
       const trimmed = value.trim();
       const airportMatches = matchAirports(value);
       const candidate = postcodeCandidate(value);
+      const isFullPostcode = candidate && FULL_POSTCODE_RE.test(candidate);
       const wantsStreetSearch = trimmed.length >= 4;
 
       if (postcodeController) postcodeController.abort();
       if (streetController) streetController.abort();
+      if (nearbyController) nearbyController.abort();
 
       if (!candidate && !wantsStreetSearch) {
         if (!airportMatches.length && trimmed.length < 2) { close(); return; }
@@ -264,15 +339,66 @@
       }
 
       const myToken = ++requestToken;
-      let streetMatches = [];
+      let nominatimAddresses = [];
+      let nearbyAddresses = [];
       let postcodeMatches = [];
       let areaHint = null;
+      let postcodeResult = null; // { invalid, postcode, locality } once the full-postcode lookup resolves
       let pending = 0;
       const isCurrent = () => myToken === requestToken;
 
+      // Nominatim and Overpass often surface the same street from different
+      // angles (a named POI vs. the road network) — merge and dedupe by the
+      // final address line rather than showing near-duplicates.
+      const mergedAddresses = () => {
+        const seen = new Set();
+        const merged = [];
+        // Nominatim results are text-matched against what was actually typed
+        // (so rank first); Overpass's nearby-street list is a generic
+        // "what's around this postcode" supplement, shown after.
+        [...nominatimAddresses, ...nearbyAddresses].forEach(addr => {
+          if (!seen.has(addr.main)) { seen.add(addr.main); merged.push(addr); }
+        });
+        return merged.slice(0, 6);
+      };
+
+      const buildNotice = () => {
+        if (mergedAddresses().length) return null;
+        if (postcodeResult && postcodeResult.invalid) {
+          return `We don't recognise "${escapeHtml(candidate)}" as a postcode — check it's typed correctly.`;
+        }
+        if (postcodeResult && !postcodeResult.invalid) {
+          const where = postcodeResult.locality ? ` (${escapeHtml(postcodeResult.locality)})` : '';
+          return `${escapeHtml(postcodeResult.postcode)}${where} is a real postcode, but we couldn't find named streets for it automatically — type your house number and street name before the postcode.`;
+        }
+        if (areaHint) {
+          return `"${escapeHtml(areaHint)}" is an area, not a specific address — add a street name or postcode, e.g. "High Street, ${escapeHtml(areaHint)}".`;
+        }
+        return null;
+      };
+
+      const rerender = (loading) => render(airportMatches, mergedAddresses(), postcodeMatches, loading, buildNotice());
+
       render(airportMatches, [], [], true);
 
-      if (candidate) {
+      if (isFullPostcode) {
+        // A complete, real postcode — confirm it and look for streets
+        // genuinely near it, rather than just offering to complete the
+        // postcode text (there's nothing left to complete).
+        pending++;
+        nearbyController = new AbortController();
+        fetchNearbyAddresses(candidate, nearbyController.signal)
+          .then(result => {
+            if (!isCurrent()) return;
+            nearbyAddresses = result.addresses;
+            postcodeResult = { invalid: result.invalid, postcode: result.postcode, locality: result.locality };
+          })
+          .catch(() => {})
+          .finally(() => {
+            pending--;
+            if (isCurrent()) rerender(pending > 0);
+          });
+      } else if (candidate) {
         pending++;
         postcodeController = new AbortController();
         fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(candidate)}/autocomplete?limit=5`, { signal: postcodeController.signal })
@@ -284,7 +410,7 @@
           .catch(() => {})
           .finally(() => {
             pending--;
-            if (isCurrent()) render(airportMatches, streetMatches, postcodeMatches, pending > 0, areaHint);
+            if (isCurrent()) rerender(pending > 0);
           });
       }
 
@@ -294,13 +420,13 @@
         fetchStreetMatches(value, streetController.signal)
           .then(result => {
             if (!isCurrent()) return;
-            streetMatches = result.addresses;
+            nominatimAddresses = result.addresses;
             areaHint = result.areaHint;
           })
           .catch(() => {})
           .finally(() => {
             pending--;
-            if (isCurrent()) render(airportMatches, streetMatches, postcodeMatches, pending > 0, areaHint);
+            if (isCurrent()) rerender(pending > 0);
           });
       }
     };
