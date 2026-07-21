@@ -126,16 +126,16 @@ section{ padding:96px 0; }
 .review-banner:hover, .review-banner:focus-visible{ background:var(--plum-deep); }
 .review-banner.is-hidden{ transform:translateY(-100%); opacity:0; pointer-events:none; }
 .review-banner-track{
-  display:flex; width:max-content; gap:0; animation:marquee 22s linear infinite;
+  display:flex; width:max-content; gap:0; animation:marquee 60s linear infinite;
 }
 .review-banner:hover .review-banner-track, .review-banner:focus-visible .review-banner-track{ animation-play-state:paused; }
 .review-banner-item{
   display:inline-flex; align-items:center; gap:8px; padding:0 22px;
-  font-family:var(--font-mono); font-size:.7rem; letter-spacing:.06em; text-transform:uppercase;
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.01em;
   white-space:nowrap;
 }
 .review-banner .review-stars{ color:var(--gold); letter-spacing:1px; font-size:.8rem; }
-.review-banner-item .review-cta{ color:var(--gold); text-decoration:underline; text-underline-offset:2px; }
+.review-banner-item .review-cta{ color:var(--gold); text-decoration:underline; text-underline-offset:2px; text-transform:uppercase; letter-spacing:.06em; font-size:.65rem; }
 @media (prefers-reduced-motion: reduce){ .review-banner-track{ animation:none; } }
 
 /* ============================================================

@@ -71,7 +71,7 @@
   });
 
   // quote form -> WhatsApp deep link
-  const WHATSAPP_NUMBER = '447359270309';
+  const WHATSAPP_NUMBER = '447967572694';
   const decorForm = document.getElementById('decorForm');
   if (decorForm) {
     decorForm.addEventListener('submit', (e) => {

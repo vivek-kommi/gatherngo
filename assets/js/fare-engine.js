@@ -71,11 +71,11 @@ window.GNGFare = (() => {
   };
 
   // The shared trip cost before any vehicle-specific surcharge or the
-  // night/weekend multipliers — see the "Algorithm" section of the brief.
+  // night/weekend adjustments — see the "Algorithm" section of the brief.
   const baseFare = ({ miles, minutes, airportCharge, extraLuggage, meetAndGreet }) => {
     let fare = 5.0; // base fare
     if (miles <= 10) fare += miles * 2.2;
-    else fare += 10 * 2.2 + (miles - 10) * 1.8;
+    else fare += 10 * 2.2 + (miles - 10) * 1.5; // £1.50/mile above 10 miles
     fare += minutes * 0.3;
     fare += airportCharge;
     if (extraLuggage) fare += 5;
@@ -85,12 +85,17 @@ window.GNGFare = (() => {
 
   const finalizeFare = (base, { largeVehicle, night, weekend, minimumFare }) => {
     let fare = base;
-    if (largeVehicle) fare += 20;
-    if (night) fare *= 1.15;
-    if (weekend) fare *= 1.1;
+    if (largeVehicle) fare += 40; // large vehicle surcharge
+    if (weekend) fare *= 1.1; // weekend / bank holiday rate
+    if (night) fare += 10; // flat late-night/early-morning surcharge (22:00–06:00)
     fare = Math.max(fare, minimumFare);
     return Math.ceil(fare);
   };
+
+  // Not part of the pre-trip estimate (waiting is a day-of variable), but
+  // exposed so the UI copy can quote the real policy consistently.
+  const WAITING_FREE_MINUTES = 30;
+  const WAITING_RATE_PER_HOUR = 15;
 
   // Runs the whole pipeline for one trip and returns everything both the
   // hero widget and the fleet grid need to render themselves.
@@ -104,5 +109,8 @@ window.GNGFare = (() => {
     return { from, to, miles, minutes, airportCharge, night, weekend, base };
   };
 
-  return { VEHICLES, money, findAirport, extractPostcode, geocode, route, isNight, isWeekendOrHoliday, baseFare, finalizeFare, estimateTrip };
+  return {
+    VEHICLES, money, findAirport, extractPostcode, geocode, route, isNight, isWeekendOrHoliday,
+    baseFare, finalizeFare, estimateTrip, WAITING_FREE_MINUTES, WAITING_RATE_PER_HOUR,
+  };
 })();

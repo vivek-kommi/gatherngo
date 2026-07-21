@@ -72,7 +72,7 @@
   }
 
   // quote forms -> WhatsApp deep link
-  const WHATSAPP_NUMBER = '447359270309';
+  const WHATSAPP_NUMBER = '447967572694';
   const buildMessage = (data) => {
     const lines = ['Hi Gather & Go, I\'d like to request a quote:'];
     if (data.name) lines.push(`Name: ${data.name}`);

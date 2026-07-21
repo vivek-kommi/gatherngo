@@ -109,7 +109,7 @@
     if (document.getElementById('fareMeetGreet').checked) lines.push('Meet & greet: yes');
     lines.push(`Estimated one way: ${money(oneWay)}`);
     lines.push(`Estimated return: ${money(ret)}`);
-    return `https://wa.me/447359270309?text=${encodeURIComponent(lines.join('\n'))}`;
+    return `https://wa.me/447967572694?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
   grid.addEventListener('click', (e) => {
