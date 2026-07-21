@@ -1,13 +1,17 @@
 (() => {
   const header = document.getElementById('siteHeader');
+  const reviewBanner = document.getElementById('reviewBanner');
   const nav = document.getElementById('mainNav');
   const navToggle = document.getElementById('navToggle');
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // header shrink on scroll
+  // header shrink on scroll; the review banner above it tucks away at the
+  // same moment so the header can reclaim that space.
   const onScroll = () => {
-    header.classList.toggle('is-scrolled', window.scrollY > 20);
+    const scrolled = window.scrollY > 20;
+    header.classList.toggle('is-scrolled', scrolled);
+    if (reviewBanner) reviewBanner.classList.toggle('is-hidden', scrolled);
   };
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
@@ -17,6 +21,12 @@
     navToggle.addEventListener('click', () => {
       const open = nav.classList.toggle('is-open');
       navToggle.setAttribute('aria-expanded', String(open));
+      if (open) {
+        // The header's bottom edge moves depending on whether the review
+        // banner above it is currently visible — read it fresh each time
+        // rather than assuming a fixed offset.
+        nav.style.top = `${header.getBoundingClientRect().bottom}px`;
+      }
     });
     nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
       nav.classList.remove('is-open');

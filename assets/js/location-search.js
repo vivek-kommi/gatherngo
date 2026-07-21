@@ -141,6 +141,10 @@
       lastFilled = value;
       close();
       if (document.activeElement !== input) input.focus();
+      // Deliberately not a real 'input' event — that would re-trigger this
+      // field's own search and reopen the list. Other listeners (trip-sync)
+      // that need to know the value changed listen for this instead.
+      input.dispatchEvent(new CustomEvent('locationsync', { bubbles: true }));
     };
 
     const chooseAirport = (airport) => fillValue(airport.value);

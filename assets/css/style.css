@@ -115,15 +115,40 @@ section{ padding:96px 0; }
 .link-arrow:hover svg{ transform:translateX(4px); }
 
 /* ============================================================
+   Review banner — fixed strip above the header, tucks away on scroll
+   ============================================================ */
+.review-banner{
+  position:fixed; top:0; left:0; right:0; z-index:110; height:36px;
+  display:flex; align-items:center; overflow:hidden;
+  background:var(--ink); color:rgba(255,255,255,.92);
+  transition:transform .3s ease, opacity .25s ease;
+}
+.review-banner:hover, .review-banner:focus-visible{ background:var(--plum-deep); }
+.review-banner.is-hidden{ transform:translateY(-100%); opacity:0; pointer-events:none; }
+.review-banner-track{
+  display:flex; width:max-content; gap:0; animation:marquee 22s linear infinite;
+}
+.review-banner:hover .review-banner-track, .review-banner:focus-visible .review-banner-track{ animation-play-state:paused; }
+.review-banner-item{
+  display:inline-flex; align-items:center; gap:8px; padding:0 22px;
+  font-family:var(--font-mono); font-size:.7rem; letter-spacing:.06em; text-transform:uppercase;
+  white-space:nowrap;
+}
+.review-banner .review-stars{ color:var(--gold); letter-spacing:1px; font-size:.8rem; }
+.review-banner-item .review-cta{ color:var(--gold); text-decoration:underline; text-underline-offset:2px; }
+@media (prefers-reduced-motion: reduce){ .review-banner-track{ animation:none; } }
+
+/* ============================================================
    Header
    ============================================================ */
 .site-header{
-  position:fixed; inset:0 0 auto 0; z-index:100;
+  position:fixed; top:36px; left:0; right:0; z-index:100;
   display:flex; align-items:center;
   height:84px;
   color:var(--white);
-  transition:height .25s ease, color .25s ease;
+  transition:height .25s ease, color .25s ease, top .3s ease;
 }
+.site-header.is-scrolled{ top:0; }
 /* blur lives on a pseudo-element, not the header itself — applying
    backdrop-filter directly to .site-header would make it a CSS
    containing block for its position:fixed children (the mobile nav),
@@ -172,7 +197,10 @@ section{ padding:96px 0; }
 
 @media (max-width:900px){
   .main-nav{
-    position:fixed; inset:72px 0 0 0; background:var(--paper);
+    /* top is a fallback for first paint; navToggle sets the precise value
+       from the header's actual current bottom edge (which moves when the
+       review banner is visible/hidden) each time the menu opens. */
+    position:fixed; top:72px; left:0; right:0; bottom:0; background:var(--paper);
     transform:translateY(-8px); opacity:0; pointer-events:none;
     transition:opacity .2s ease, transform .2s ease;
     padding:32px 24px; border-top:1px solid var(--line);
