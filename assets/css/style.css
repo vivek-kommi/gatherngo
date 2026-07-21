@@ -304,6 +304,9 @@ section{ padding:96px 0; }
 .location-suggestions .loc-empty{
   padding:10px; font-size:.85rem; color:var(--ink-soft);
 }
+.location-suggestions .loc-hint{
+  color:var(--plum); background:var(--plum-tint); border-radius:8px; line-height:1.4;
+}
 .loc-option{
   display:flex; align-items:flex-start; gap:10px; width:100%; text-align:left;
   padding:9px 10px; border-radius:8px; font-size:.88rem; color:var(--ink); background:none; border:none;

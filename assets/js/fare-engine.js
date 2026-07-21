@@ -74,8 +74,8 @@ window.GNGFare = (() => {
   // night/weekend adjustments — see the "Algorithm" section of the brief.
   const baseFare = ({ miles, minutes, airportCharge, extraLuggage, meetAndGreet }) => {
     let fare = 5.0; // base fare
-    if (miles <= 10) fare += miles * 2.2;
-    else fare += 10 * 2.2 + (miles - 10) * 1.5; // £1.50/mile above 10 miles
+    if (miles <= 10) fare += miles * 2.0;
+    else fare += 10 * 2.0 + (miles - 10) * 1.5; // £1.50/mile above 10 miles
     fare += minutes * 0.3;
     fare += airportCharge;
     if (extraLuggage) fare += 5;

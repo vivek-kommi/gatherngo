@@ -15,9 +15,15 @@
   let saved = {};
   try { saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) { /* private browsing etc. */ }
 
-  const persist = (key, value) => {
+  // A location field's "verified" flag (set by location-search.js only when
+  // a real address/airport was picked, not just typed) has to travel with
+  // its value here too — otherwise a confirmed pickup entered in one form
+  // would land in the other still marked unverified and block submission.
+  const isLocationField = (el) => el && el.classList.contains('location-input');
+
+  const persist = (key, value, verified) => {
     if (!value) return;
-    saved[key] = value;
+    saved[key] = { value, verified: !!verified };
     try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (e) { /* ignore */ }
   };
 
@@ -27,15 +33,25 @@
     if (!a && !b) return;
 
     // Restore whichever was last entered this session, into both fields.
-    const rememberedValue = saved[idA];
-    if (rememberedValue) {
-      if (a) a.value = rememberedValue;
-      if (b) b.value = rememberedValue;
+    const remembered = saved[idA];
+    if (remembered) {
+      [a, b].forEach(el => {
+        if (!el) return;
+        el.value = remembered.value;
+        if (isLocationField(el) && window.GNGSetLocationVerified) {
+          window.GNGSetLocationVerified(el, remembered.verified);
+        }
+      });
     }
 
     const syncFrom = (source, target) => {
-      if (target && target.value !== source.value) target.value = source.value;
-      persist(idA, source.value);
+      if (target && target.value !== source.value) {
+        target.value = source.value;
+        if (isLocationField(target) && window.GNGSetLocationVerified) {
+          window.GNGSetLocationVerified(target, source.dataset.verified === 'true');
+        }
+      }
+      persist(idA, source.value, source.dataset && source.dataset.verified === 'true');
     };
 
     // 'input'/'change' cover typing and native pickers; 'locationsync' is a

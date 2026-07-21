@@ -66,9 +66,27 @@
 
   const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+  // A location field is only ever "verified" — allowed to pass form
+  // validation — when its value was set by picking an airport terminal or a
+  // real geocoded address from the list. Typing something that merely looks
+  // right (or completing just the postcode) is not enough: we want a
+  // genuine full address, not a shape that happens to match the pattern.
+  // Stored on the element itself (not a closure var) so trip-sync.js can
+  // carry the flag across when it copies a value into the paired field.
+  const applyVerified = (input, ok) => {
+    input.dataset.verified = ok ? 'true' : 'false';
+    if (ok || input.value.trim() === '') {
+      input.setCustomValidity('');
+    } else {
+      input.setCustomValidity('Choose a full address from the list, or an airport terminal.');
+    }
+  };
+  window.GNGSetLocationVerified = applyVerified;
+
   // Builds a clean "<street>, <town>, <POSTCODE>" line out of a Nominatim
-  // result. Results with no postcode are dropped — we only ever want to
-  // hand back something that satisfies the full-address pattern.
+  // result. Results with no postcode or no specific street are dropped —
+  // we only ever want to hand back something that's a real, complete
+  // address rather than just an area.
   const formatNominatimResult = (item) => {
     const a = item.address || {};
     if (!a.postcode) return null;
@@ -82,6 +100,20 @@
     return { main: parts.join(', '), sub: [a.county, 'UK'].filter(Boolean).join(', ') };
   };
 
+  // When a query is just a place/area name ("Uxbridge") Nominatim mostly
+  // returns the town/suburb boundary itself, which formatNominatimResult
+  // rejects (no street). Rather than showing nothing, pull the area's own
+  // name back out so the empty state can tell the user what to add next.
+  const AREA_TYPES = ['town', 'village', 'city', 'suburb', 'city_district', 'county', 'hamlet'];
+  const extractAreaHint = (list) => {
+    for (const item of (list || [])) {
+      if (AREA_TYPES.includes(item.addresstype)) {
+        return item.name || (item.display_name || '').split(',')[0] || null;
+      }
+    }
+    return null;
+  };
+
   const fetchStreetMatches = (query, signal) => {
     const url = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
       q: query, format: 'jsonv2', addressdetails: '1', countrycodes: 'gb', limit: '8',
@@ -90,15 +122,15 @@
       .then(res => res.json())
       .then(list => {
         const seen = new Set();
-        const out = [];
+        const addresses = [];
         (list || []).forEach(item => {
           const formatted = formatNominatimResult(item);
           if (formatted && !seen.has(formatted.main)) {
             seen.add(formatted.main);
-            out.push(formatted);
+            addresses.push(formatted);
           }
         });
-        return out.slice(0, 5);
+        return { addresses: addresses.slice(0, 5), areaHint: addresses.length ? null : extractAreaHint(list) };
       });
   };
 
@@ -111,6 +143,8 @@
     let streetController = null;
     let requestToken = 0;
     let lastFilled = null; // value we just set via a suggestion — don't re-search it
+
+    if (input.dataset.verified === undefined) applyVerified(input, false);
 
     const close = () => {
       // Invalidate the current request so any fetch still in flight (e.g. the
@@ -136,9 +170,10 @@
       }
     };
 
-    const fillValue = (value) => {
+    const fillValue = (value, verified) => {
       input.value = value;
       lastFilled = value;
+      applyVerified(input, verified);
       close();
       if (document.activeElement !== input) input.focus();
       // Deliberately not a real 'input' event — that would re-trigger this
@@ -147,9 +182,13 @@
       input.dispatchEvent(new CustomEvent('locationsync', { bubbles: true }));
     };
 
-    const chooseAirport = (airport) => fillValue(airport.value);
-    const chooseAddress = (addr) => fillValue(addr.main);
-    const choosePostcode = (postcode) => fillValue(replaceTrailingToken(input.value, postcode));
+    // Airport terminals and geocoded addresses are complete, real places —
+    // verified. Completing just the postcode isn't: the rest of the value
+    // is still whatever the user free-typed, so it stays unverified until
+    // they pick an actual address.
+    const chooseAirport = (airport) => fillValue(airport.value, true);
+    const chooseAddress = (addr) => fillValue(addr.main, true);
+    const choosePostcode = (postcode) => fillValue(replaceTrailingToken(input.value, postcode), false);
 
     const selectItem = (item) => {
       if (item.type === 'airport') chooseAirport(item.data);
@@ -157,7 +196,7 @@
       else choosePostcode(item.data);
     };
 
-    const render = (airportMatches, streetMatches, postcodeMatches, loading) => {
+    const render = (airportMatches, streetMatches, postcodeMatches, loading, areaHint) => {
       items = [];
       let html = '';
 
@@ -186,9 +225,13 @@
       }
 
       if (!items.length) {
-        html = loading
-          ? '<li class="loc-empty">Searching…</li>'
-          : '<li class="loc-empty">No matches yet — keep typing the address or postcode.</li>';
+        if (loading) {
+          html = '<li class="loc-empty">Searching…</li>';
+        } else if (areaHint) {
+          html = `<li class="loc-empty loc-hint">"${escapeHtml(areaHint)}" is an area, not a specific address — add a street name or postcode, e.g. "High Street, ${escapeHtml(areaHint)}".</li>`;
+        } else {
+          html = '<li class="loc-empty">No matches yet — keep typing the full address or postcode.</li>';
+        }
       }
 
       list.innerHTML = html;
@@ -223,6 +266,7 @@
       const myToken = ++requestToken;
       let streetMatches = [];
       let postcodeMatches = [];
+      let areaHint = null;
       let pending = 0;
       const isCurrent = () => myToken === requestToken;
 
@@ -240,7 +284,7 @@
           .catch(() => {})
           .finally(() => {
             pending--;
-            if (isCurrent()) render(airportMatches, streetMatches, postcodeMatches, pending > 0);
+            if (isCurrent()) render(airportMatches, streetMatches, postcodeMatches, pending > 0, areaHint);
           });
       }
 
@@ -248,14 +292,15 @@
         pending++;
         streetController = new AbortController();
         fetchStreetMatches(value, streetController.signal)
-          .then(matches => {
+          .then(result => {
             if (!isCurrent()) return;
-            streetMatches = matches;
+            streetMatches = result.addresses;
+            areaHint = result.areaHint;
           })
           .catch(() => {})
           .finally(() => {
             pending--;
-            if (isCurrent()) render(airportMatches, streetMatches, postcodeMatches, pending > 0);
+            if (isCurrent()) render(airportMatches, streetMatches, postcodeMatches, pending > 0, areaHint);
           });
       }
     };
@@ -263,6 +308,7 @@
     input.addEventListener('input', () => {
       if (input.value === lastFilled) { lastFilled = null; return; }
       lastFilled = null;
+      applyVerified(input, false);
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(runSearch, 380);
     });
