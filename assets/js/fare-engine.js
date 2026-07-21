@@ -48,13 +48,17 @@ window.GNGFare = (() => {
   };
 
   // Free public OSRM demo router — real driving distance/time, no API key.
+  // overview=full gets back the actual road-by-road route geometry (as
+  // [lon,lat] pairs, GeoJSON order) so the map can draw the real path
+  // instead of a straight line between the two points.
   const route = async (from, to) => {
-    const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false&steps=false`;
+    const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson&alternatives=false&steps=false`;
     const res = await fetch(url);
     const data = await res.json();
     const r = data && data.routes && data.routes[0];
     if (!r) throw new Error('No driving route found between those two points.');
-    return { miles: r.distance / 1609.344, minutes: r.duration / 60 };
+    const path = (r.geometry && r.geometry.coordinates) || [];
+    return { miles: r.distance / 1609.344, minutes: r.duration / 60, path };
   };
 
   const isNight = (timeStr) => {
@@ -101,12 +105,12 @@ window.GNGFare = (() => {
   // hero widget and the fleet grid need to render themselves.
   const estimateTrip = async ({ pickup, dropoff, date, time, extraLuggage, meetAndGreet }) => {
     const [from, to] = await Promise.all([geocode(pickup), geocode(dropoff)]);
-    const { miles, minutes } = await route(from, to);
+    const { miles, minutes, path } = await route(from, to);
     const airportCharge = (from.charge || 0) + (to.charge || 0);
     const night = isNight(time);
     const weekend = isWeekendOrHoliday(date);
     const base = baseFare({ miles, minutes, airportCharge, extraLuggage, meetAndGreet });
-    return { from, to, miles, minutes, airportCharge, night, weekend, base };
+    return { from, to, miles, minutes, path, airportCharge, night, weekend, base };
   };
 
   return {

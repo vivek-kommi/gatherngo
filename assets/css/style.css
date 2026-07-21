@@ -678,6 +678,33 @@ section{ padding:96px 0; }
   background:var(--white); border:1px solid var(--line); padding:5px 10px; border-radius:999px; color:var(--ink-soft);
 }
 
+/* journey map */
+.fare-map{
+  position:relative; border-radius:var(--radius-lg); overflow:hidden;
+  box-shadow:var(--shadow-card); border:1px solid var(--line);
+  margin-bottom:28px; animation:cardIn .4s ease both;
+}
+.fare-map-canvas{ width:100%; height:360px; background:var(--paper); }
+@media (max-width:640px){ .fare-map-canvas{ height:260px; } }
+.fare-map-legend{
+  position:absolute; top:14px; left:14px; z-index:1000;
+  display:flex; gap:14px; background:rgba(255,253,248,.94); backdrop-filter:blur(6px);
+  border-radius:999px; padding:8px 16px; box-shadow:var(--shadow-soft);
+  font-family:var(--font-mono); font-size:.7rem; letter-spacing:.04em; color:var(--ink-soft);
+}
+.fare-map-legend-item{ display:flex; align-items:center; gap:6px; }
+.fare-map-legend-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.fare-map-pin-wrap{ background:none; border:none; }
+.fare-map-pin{
+  display:flex; align-items:center; justify-content:center; width:26px; height:26px;
+  border-radius:50%; border:3px solid var(--white); box-shadow:0 3px 10px rgba(20,16,40,.4);
+  color:var(--white); font-family:var(--font-mono); font-weight:700; font-size:.72rem;
+}
+/* keep Leaflet's own UI (zoom buttons, attribution) legible against our fonts/colours
+   without fighting its internal layout */
+.leaflet-container{ font-family:var(--font-body); }
+.leaflet-control-attribution{ font-size:.62rem; }
+
 .fleet-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:24px; max-width:760px; margin-inline:auto; }
 @media (max-width:640px){ .fleet-grid{ grid-template-columns:1fr; } }
 

@@ -144,10 +144,11 @@
     summaryEl.hidden = true;
     tripState.ready = false;
     updateFleetUI();
+    if (window.GNGFareMap) window.GNGFareMap.hide();
 
     try {
       setStatus('Working out live driving distance…');
-      const { miles, minutes, airportCharge, night, weekend, base, from, to } = await Fare.estimateTrip({ pickup, dropoff, date, time, extraLuggage, meetAndGreet });
+      const { miles, minutes, path, airportCharge, night, weekend, base, from, to } = await Fare.estimateTrip({ pickup, dropoff, date, time, extraLuggage, meetAndGreet });
 
       tripState.ready = true;
       tripState.base = base;
@@ -168,11 +169,14 @@
         ${badges.map(b => `<span class="fare-badge">${b}</span>`).join('')}
       `;
 
+      if (window.GNGFareMap) window.GNGFareMap.show(from, to, path);
+
       setStatus('');
       updateFleetUI();
     } catch (err) {
       tripState.ready = false;
       updateFleetUI();
+      if (window.GNGFareMap) window.GNGFareMap.hide();
       setStatus(`${err.message || 'Something went wrong getting live pricing.'} You can still message us directly for a manual quote.`, 'error');
     } finally {
       submitBtn.disabled = false;
