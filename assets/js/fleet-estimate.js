@@ -49,6 +49,17 @@
     statusEl.className = 'fare-status' + (tone ? ` is-${tone}` : '');
   };
 
+  // Default to right now — still fully editable to any date/time, just a
+  // convenient starting point (e.g. bumping the time forward an hour).
+  const dateInput = document.getElementById('fareDate');
+  const timeInput = document.getElementById('fareTime');
+  if (dateInput && timeInput && !dateInput.value && !timeInput.value) {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    dateInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    timeInput.value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+
   const tripState = { ready: false };
 
   const updateFleetUI = () => {
@@ -173,6 +184,17 @@
 
       setStatus('');
       updateFleetUI();
+
+      // Let quotes.js know a quote is ready — it auto-saves this to the
+      // signed-in user's account, or offers to once they sign in.
+      window.dispatchEvent(new CustomEvent('gng:quote', { detail: {
+        pickup, dropoff, date, time, passengers, extraLuggage, meetAndGreet,
+        miles, minutes, night, weekend,
+        vehicles: VEHICLES.map(v => {
+          const oneWay = Fare.finalizeFare(base, { largeVehicle: v.largeVehicle, night, weekend, minimumFare: v.minimumFare });
+          return { id: v.id, name: v.name, oneWay, return: oneWay * 2 };
+        }),
+      } }));
 
       // The results (summary, map, live prices) land below the fold in the
       // hero — bring them into view instead of leaving the user to notice

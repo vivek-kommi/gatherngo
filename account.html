@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My Quotes — Gather &amp; Go | Britain</title>
+<meta name="description" content="Sign in to Gather & Go to see every fare estimate you've requested, saved to your account automatically." />
+<link rel="icon" href="assets/img/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500;1,600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css?v=3" />
+</head>
+<body>
+
+<a class="review-banner" id="reviewBanner" href="https://maps.app.goo.gl/fEaFAzyK83Pr9vBZ7" target="_blank" rel="noopener" aria-label="Read our 5-star reviews on Google">
+  <div class="review-banner-track" aria-hidden="true">
+    <span class="review-banner-item"><span class="review-stars">★★★★★</span> "The driver was attentive and very polite — service was excellent, I'll choose them again." <span class="review-cta">— PP Wooden, Google</span></span>
+    <span class="review-banner-item"><span class="review-stars">★★★★★</span> "We rely on CVK for airport transfers, deliveries and more." <span class="review-cta">— Prathik K., Google</span></span>
+    <span class="review-banner-item"><span class="review-stars">★★★★★</span> "On time and comfortable — hassle-free from LHR to Cambridge." <span class="review-cta">— Sumidha A., Google</span></span>
+    <span class="review-banner-item"><span class="review-stars">★★★★★</span> "On-time pickup, a clean car and a cooperative driver — strongly recommended." <span class="review-cta">— Tushar Shinde, Google</span></span>
+    <span class="review-banner-item"><span class="review-stars">★★★★★</span> "Punctual, friendly, and rates that beat other taxi companies." <span class="review-cta">— Gaura Purnima D., Google</span></span>
+    <span class="review-banner-item"><span class="review-stars">★★★★★</span> "Very impressed with the professional handling and prompt service." <span class="review-cta">— Praveen Surendran, Google</span></span>
+  </div>
+</a>
+
+<header class="site-header" id="siteHeader">
+  <div class="wrap">
+    <a href="index.html" class="brand">
+      <img src="assets/img/logo.png" alt="Gather & Go" />
+      <span class="brand-word">Gather &amp; Go<small>Cambridge, UK</small></span>
+    </a>
+
+    <nav class="main-nav" id="mainNav">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="index.html#services">Services</a></li>
+        <li><a href="account.html" class="is-current">My quotes</a></li>
+      </ul>
+    </nav>
+
+    <div class="header-cta">
+      <a href="tel:+447967572694" class="btn btn-ghost btn-sm">(44) 7967 572694</a>
+      <a href="index.html#top" class="btn btn-primary btn-sm">Get a quote</a>
+      <div class="auth-area" data-auth-header>
+        <button type="button" class="btn btn-ghost btn-sm" data-auth-open>Sign in</button>
+        <div class="account-chip" data-account-chip hidden>
+          <button type="button" class="account-chip-btn" aria-haspopup="true" aria-expanded="false">
+            <span class="account-avatar" data-account-avatar></span>
+            <span class="account-name" data-account-name></span>
+          </button>
+          <div class="account-menu" role="menu">
+            <a href="account.html" role="menuitem">My quotes</a>
+            <button type="button" class="account-menu-signout" role="menuitem" data-auth-signout>Sign out</button>
+          </div>
+        </div>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mainNav">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="quote-history-section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Your account</span>
+        <h2 class="section-title">My quotes.</h2>
+        <p class="section-lead">Every fare estimate you request while signed in is saved here automatically — so you can find it again without digging through messages.</p>
+      </div>
+
+      <div class="quote-history-gate" id="quoteHistoryGate" hidden>
+        <span class="eyebrow">Sign in required</span>
+        <h2>Sign in to see your quotes</h2>
+        <p>Once you're signed in, every fare estimate you request on the homepage is saved here automatically — no extra steps.</p>
+        <button type="button" class="btn btn-primary" data-auth-open="signin">Sign in or create account</button>
+      </div>
+
+      <div class="quote-history-loading" id="quoteHistoryLoading" hidden>
+        <div class="quote-history-skeleton"></div>
+        <div class="quote-history-skeleton"></div>
+      </div>
+
+      <div class="quote-history-empty" id="quoteHistoryEmpty" hidden>
+        <h2>No quotes yet</h2>
+        <p>Get an instant fare estimate on the homepage and it'll land here automatically.</p>
+        <a href="index.html#top" class="btn btn-primary">Get a quote</a>
+      </div>
+
+      <div class="quote-history-grid" id="quoteHistory" hidden></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="index.html" class="brand">
+          <img src="assets/img/logo.png" alt="Gather & Go" />
+          <span class="brand-word">Gather &amp; Go<small>Cambridge, UK</small></span>
+        </a>
+        <p>Airport transfers, private tours and event decor across Britain — plus fresh produce via our sister brand, Harvest2Home.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Site</h4>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#services">Services</a></li>
+          <li><a href="account.html">My quotes</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Services</h4>
+        <ul>
+          <li><a href="index.html#services">Airport transfers</a></li>
+          <li><a href="index.html#services">Business &amp; private tours</a></li>
+          <li><a href="event-decor.html">Event decor &amp; rentals</a></li>
+          <li><a href="https://harvest2home.co.uk" target="_blank" rel="noopener">Harvest2Home</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="tel:+447967572694">(44) 7967 572694</a></li>
+          <li><a href="mailto:contact@gatherngo.org">contact@gatherngo.org</a></li>
+          <li><a href="https://wa.me/447967572694" target="_blank" rel="noopener">WhatsApp</a></li>
+          <li><a href="https://g.page/r/CeMVLARM8exSEAE/" target="_blank" rel="noopener">Find us on Google</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="year"></span> Gather &amp; Go. Registered CIC 15898671.</span>
+      <span>6 Taskers Field, Caxton, Cambridge, UK CB23 3PA</span>
+    </div>
+  </div>
+</footer>
+
+<a href="https://wa.me/447967572694" target="_blank" rel="noopener" class="quick-whatsapp" id="quickWhatsapp" aria-label="Message us on WhatsApp">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.2h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2zm0 18.13c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.18 8.18 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.26-8.2 2.2 0 4.27.86 5.83 2.42a8.15 8.15 0 0 1 2.41 5.79c0 4.52-3.68 8.21-8.25 8.21z"/></svg>
+</a>
+
+<div class="auth-modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" hidden>
+  <div class="auth-modal-backdrop" id="authModalBackdrop"></div>
+  <div class="auth-modal-card">
+    <button class="auth-modal-close" id="authModalClose" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <span class="eyebrow">Your account</span>
+    <h3 id="authModalTitle">Sign in to Gather &amp; Go</h3>
+    <div class="auth-modal-tabs" role="tablist">
+      <button type="button" class="auth-tab is-active" data-auth-tab="signin" role="tab">Sign in</button>
+      <button type="button" class="auth-tab" data-auth-tab="signup" role="tab">Create account</button>
+    </div>
+    <button type="button" class="auth-google-btn" id="authGoogleBtn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.962L3.964 7.294C4.672 5.167 6.656 3.58 9 3.58z"/></svg>
+      Continue with Google
+    </button>
+    <div class="auth-divider"><span>or</span></div>
+    <form id="authForm" novalidate>
+      <div class="field" data-auth-field="name" hidden>
+        <label for="authName">Your name</label>
+        <input id="authName" type="text" autocomplete="name" placeholder="Full name" />
+      </div>
+      <div class="field">
+        <label for="authEmail">Email</label>
+        <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label for="authPassword">Password</label>
+        <div class="auth-password-field">
+          <input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="••••••••" />
+          <button type="button" class="auth-password-toggle" id="authPasswordToggle">Show</button>
+        </div>
+      </div>
+      <p class="auth-error" id="authError" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block" id="authSubmitBtn">Sign in</button>
+      <button type="button" class="auth-forgot" id="authForgotBtn">Forgot password?</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-init.js?v=1"></script>
+<script src="assets/js/auth-ui.js?v=2"></script>
+<script src="assets/js/quotes.js?v=1"></script>
+<script src="assets/js/main.js?v=2"></script>
+</body>
+</html>
