@@ -37,6 +37,7 @@
   const PLANE_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M10.5 20.5l1.5-4 1.5 4M2 12l20-7-7 20-2.5-8L2 12z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const PIN_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.7"/></svg>';
   const HOME_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20V8l8-5 8 5v12M4 20h16M9 20v-6h6v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ROAD_ICON = '<svg class="loc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20 9 4h6l5 16M9.5 14h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   const matchAirports = (query) => {
     const q = query.trim().toLowerCase();
@@ -68,33 +69,34 @@
 
   // A location field is only ever "verified" — allowed to pass form
   // validation — when its value was set by picking an airport terminal or a
-  // real geocoded address from the list. Typing something that merely looks
-  // right (or completing just the postcode) is not enough: we want a
-  // genuine full address, not a shape that happens to match the pattern.
-  const applyVerified = (input, ok) => {
+  // real house-numbered address from the list. Typing something that merely
+  // looks right, completing just the postcode, or picking a street name
+  // with no house number attached, is not enough: we want a genuine, real,
+  // deliverable address, not just a road.
+  const applyVerified = (input, ok, message) => {
     input.dataset.verified = ok ? 'true' : 'false';
     if (ok || input.value.trim() === '') {
       input.setCustomValidity('');
     } else {
-      input.setCustomValidity('Choose a full address from the list, or an airport terminal.');
+      input.setCustomValidity(message || 'Choose a full address from the list, or an airport terminal.');
     }
   };
 
   // Builds a clean "<street>, <town>, <POSTCODE>" line out of a Nominatim
-  // result. Results with no postcode or no specific street are dropped —
-  // we only ever want to hand back something that's a real, complete
-  // address rather than just an area.
+  // result. Results with no postcode are dropped entirely — hasNumber flags
+  // whether it's a genuine house-numbered address (verified-eligible) or
+  // just a named street/place (needs a house number added before it counts).
   const formatNominatimResult = (item) => {
     const a = item.address || {};
     if (!a.postcode) return null;
-    const line1 = a.house_number && a.road ? `${a.house_number} ${a.road}`
-      : a.road || a.pedestrian || a.name || a.suburb;
+    const hasNumber = !!(a.house_number && a.road);
+    const line1 = hasNumber ? `${a.house_number} ${a.road}` : (a.road || a.pedestrian || a.name || a.suburb);
     if (!line1) return null;
     const locality = a.village || a.town || a.city || a.suburb || a.city_district || a.county;
     const parts = [line1];
     if (locality && locality !== line1) parts.push(locality);
     parts.push(a.postcode);
-    return { main: parts.join(', '), sub: [a.county, 'UK'].filter(Boolean).join(', ') };
+    return { main: parts.join(', '), sub: [a.county, 'UK'].filter(Boolean).join(', '), hasNumber };
   };
 
   // When a query is just a place/area name ("Uxbridge") Nominatim mostly
@@ -113,21 +115,26 @@
 
   const fetchStreetMatches = (query, signal) => {
     const url = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
-      q: query, format: 'jsonv2', addressdetails: '1', countrycodes: 'gb', limit: '8',
+      q: query, format: 'jsonv2', addressdetails: '1', countrycodes: 'gb', limit: '15',
     });
     return fetch(url, { signal, headers: { 'Accept-Language': 'en-GB' } })
       .then(res => res.json())
       .then(list => {
         const seen = new Set();
         const addresses = [];
+        const streets = [];
         (list || []).forEach(item => {
           const formatted = formatNominatimResult(item);
           if (formatted && !seen.has(formatted.main)) {
             seen.add(formatted.main);
-            addresses.push(formatted);
+            (formatted.hasNumber ? addresses : streets).push(formatted);
           }
         });
-        return { addresses: addresses.slice(0, 5), areaHint: addresses.length ? null : extractAreaHint(list) };
+        return {
+          addresses: addresses.slice(0, 10),
+          streets: streets.slice(0, 10),
+          areaHint: (addresses.length || streets.length) ? null : extractAreaHint(list),
+        };
       });
   };
 
@@ -179,7 +186,7 @@
   };
 
   const fetchNearbyAddressData = async (lat, lon, signal) => {
-    const query = `[out:json][timeout:8];(node(around:400,${lat},${lon})["addr:housenumber"]["addr:street"];way(around:400,${lat},${lon})["addr:housenumber"]["addr:street"];way(around:600,${lat},${lon})[highway][name];);out tags center;`;
+    const query = `[out:json][timeout:8];(node(around:550,${lat},${lon})["addr:housenumber"]["addr:street"];way(around:550,${lat},${lon})["addr:housenumber"]["addr:street"];way(around:900,${lat},${lon})[highway][name];);out tags center;`;
     const data = await fetchOverpass(query, signal);
     if (!data) return { houses: [], streets: [] }; // Overpass had a bad day even after a retry — degrade quietly, Nominatim search still runs alongside this
 
@@ -237,18 +244,18 @@
     // genuinely differ from the one typed (UK postcodes cover a handful of
     // addresses each). Fall back to the searched postcode only when the
     // building itself isn't tagged with one.
-    const houseAddresses = houses.slice(0, 6).map(h => {
+    const houseAddresses = houses.slice(0, 12).map(h => {
       const parts = [`${h.number} ${h.street}`];
       if (locality) parts.push(pc.admin_district || locality);
       parts.push(h.postcode || pc.postcode);
       return { main: parts.join(', '), sub: [locality, 'UK'].filter(Boolean).join(', ') };
     });
 
-    // Fill out the list with street-only options where house-level data is
-    // thin, rather than showing house numbers alone when there are few.
+    // Street names with no house-number data of their own — real streets,
+    // just not a complete address on their own, so kept as a separate group.
     const streetAddresses = streets
       .filter(name => !houses.some(h => h.street === name))
-      .slice(0, 6 - houseAddresses.length)
+      .slice(0, 12)
       .map(name => {
         const parts = [name];
         if (locality) parts.push(pc.admin_district || locality);
@@ -256,7 +263,7 @@
         return { main: parts.join(', '), sub: [locality, 'UK'].filter(Boolean).join(', ') };
       });
 
-    return { addresses: [...houseAddresses, ...streetAddresses], locality, invalid: false, postcode: pc.postcode };
+    return { addresses: houseAddresses, streets: streetAddresses, locality, invalid: false, postcode: pc.postcode };
   };
 
   function initLocationField(input) {
@@ -297,29 +304,36 @@
       }
     };
 
-    const fillValue = (value, verified) => {
+    const fillValue = (value, verified, message) => {
       input.value = value;
       lastFilled = value;
-      applyVerified(input, verified);
+      applyVerified(input, verified, message);
       close();
       if (document.activeElement !== input) input.focus();
     };
 
-    // Airport terminals and geocoded addresses are complete, real places —
-    // verified. Completing just the postcode isn't: the rest of the value
-    // is still whatever the user free-typed, so it stays unverified until
-    // they pick an actual address.
+    // Airport terminals and house-numbered addresses are complete, real,
+    // deliverable places — verified. Completing just the postcode, or
+    // picking a street with no house number attached, isn't enough: the
+    // value still needs a number added before it's a real address.
     const chooseAirport = (airport) => fillValue(airport.value, true);
     const chooseAddress = (addr) => fillValue(addr.main, true);
     const choosePostcode = (postcode) => fillValue(replaceTrailingToken(input.value, postcode), false);
+    const chooseStreet = (addr) => {
+      fillValue(addr.main, false, 'Add your house number before the street name.');
+      // Cursor at the very start — adding the number is a one-step edit,
+      // not a find-the-right-spot-and-retype.
+      input.setSelectionRange(0, 0);
+    };
 
     const selectItem = (item) => {
       if (item.type === 'airport') chooseAirport(item.data);
       else if (item.type === 'address') chooseAddress(item.data);
+      else if (item.type === 'street') chooseStreet(item.data);
       else choosePostcode(item.data);
     };
 
-    const render = (airportMatches, streetMatches, postcodeMatches, loading, notice) => {
+    const render = (airportMatches, addressMatches, streetMatches, postcodeMatches, loading, notice) => {
       items = [];
       let html = '';
 
@@ -331,11 +345,19 @@
         });
       }
 
-      if (streetMatches.length) {
+      if (addressMatches.length) {
         html += '<li class="loc-group-label" role="presentation">Addresses</li>';
-        streetMatches.forEach(addr => {
+        addressMatches.forEach(addr => {
           items.push({ type: 'address', data: addr });
           html += `<li class="loc-option" role="option" tabindex="-1">${HOME_ICON}<span class="loc-text"><span class="loc-main">${escapeHtml(addr.main)}</span>${addr.sub ? `<span class="loc-sub">${escapeHtml(addr.sub)}</span>` : ''}</span></li>`;
+        });
+      }
+
+      if (streetMatches.length) {
+        html += '<li class="loc-group-label" role="presentation">Streets — add your house number</li>';
+        streetMatches.forEach(addr => {
+          items.push({ type: 'street', data: addr });
+          html += `<li class="loc-option" role="option" tabindex="-1">${ROAD_ICON}<span class="loc-text"><span class="loc-main">${escapeHtml(addr.main)}</span>${addr.sub ? `<span class="loc-sub">${escapeHtml(addr.sub)}</span>` : ''}</span></li>`;
         });
       }
 
@@ -384,13 +406,15 @@
 
       if (!candidate && !wantsStreetSearch) {
         if (!airportMatches.length && trimmed.length < 2) { close(); return; }
-        render(airportMatches, [], [], false);
+        render(airportMatches, [], [], [], false);
         return;
       }
 
       const myToken = ++requestToken;
       let nominatimAddresses = [];
+      let nominatimStreets = [];
       let nearbyAddresses = [];
+      let nearbyStreets = [];
       let postcodeMatches = [];
       let areaHint = null;
       let postcodeResult = null; // { invalid, postcode, locality } once the full-postcode lookup resolves
@@ -399,21 +423,23 @@
 
       // Nominatim and Overpass often surface the same street from different
       // angles (a named POI vs. the road network) — merge and dedupe by the
-      // final address line rather than showing near-duplicates.
-      const mergedAddresses = () => {
+      // final address line rather than showing near-duplicates. Nominatim
+      // results are text-matched against what was actually typed (so rank
+      // first); Overpass's nearby list is a generic "what's around this
+      // postcode" supplement, shown after.
+      const dedupe = (a, b) => {
         const seen = new Set();
         const merged = [];
-        // Nominatim results are text-matched against what was actually typed
-        // (so rank first); Overpass's nearby-street list is a generic
-        // "what's around this postcode" supplement, shown after.
-        [...nominatimAddresses, ...nearbyAddresses].forEach(addr => {
+        [...a, ...b].forEach(addr => {
           if (!seen.has(addr.main)) { seen.add(addr.main); merged.push(addr); }
         });
-        return merged.slice(0, 6);
+        return merged.slice(0, 10);
       };
+      const mergedAddresses = () => dedupe(nominatimAddresses, nearbyAddresses);
+      const mergedStreets = () => dedupe(nominatimStreets, nearbyStreets);
 
       const buildNotice = () => {
-        if (mergedAddresses().length) return null;
+        if (mergedAddresses().length || mergedStreets().length) return null;
         if (postcodeResult && postcodeResult.invalid) {
           return `We don't recognise "${escapeHtml(candidate)}" as a postcode — check it's typed correctly.`;
         }
@@ -427,9 +453,9 @@
         return null;
       };
 
-      const rerender = (loading) => render(airportMatches, mergedAddresses(), postcodeMatches, loading, buildNotice());
+      const rerender = (loading) => render(airportMatches, mergedAddresses(), mergedStreets(), postcodeMatches, loading, buildNotice());
 
-      render(airportMatches, [], [], true);
+      render(airportMatches, [], [], [], true);
 
       if (isFullPostcode) {
         // A complete, real postcode — confirm it and look for streets
@@ -441,6 +467,7 @@
           .then(result => {
             if (!isCurrent()) return;
             nearbyAddresses = result.addresses;
+            nearbyStreets = result.streets;
             postcodeResult = { invalid: result.invalid, postcode: result.postcode, locality: result.locality };
           })
           .catch(() => {})
@@ -471,6 +498,7 @@
           .then(result => {
             if (!isCurrent()) return;
             nominatimAddresses = result.addresses;
+            nominatimStreets = result.streets;
             areaHint = result.areaHint;
           })
           .catch(() => {})
