@@ -31,6 +31,9 @@
 }
 
 *,*::before,*::after{ box-sizing:border-box; }
+/* the hidden attribute must win over any class that sets its own display
+   (e.g. .btn's inline-flex) — author styles otherwise beat the UA default */
+[hidden]{ display:none !important; }
 html{ scroll-behavior:smooth; }
 @media (prefers-reduced-motion: reduce){
   html{ scroll-behavior:auto; }
@@ -554,7 +557,6 @@ section{ padding:96px 0; }
   opacity:0; transform:translateY(6px); transition:opacity .2s ease, transform .2s ease;
 }
 .gallery-item:hover .cap{ opacity:1; transform:none; }
-.gallery-item[hidden]{ display:none; }
 
 @media (max-width:900px){ .gallery-grid{ column-count:2; } }
 @media (max-width:560px){ .gallery-grid{ column-count:1; } }
@@ -886,7 +888,6 @@ section{ padding:96px 0; }
    Auth modal — sign in / create account
    ============================================================ */
 .auth-modal{ position:fixed; inset:0; z-index:210; display:flex; align-items:center; justify-content:center; padding:20px; }
-.auth-modal[hidden]{ display:none; }
 .auth-modal-backdrop{ position:absolute; inset:0; background:rgba(15,10,26,.6); opacity:0; transition:opacity .2s ease; }
 .auth-modal.is-open .auth-modal-backdrop{ opacity:1; }
 .auth-modal-card{
