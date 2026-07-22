@@ -706,7 +706,7 @@ section{ padding:96px 0; }
 .fleet-book:disabled:hover{ background:var(--plum); }
 
 .fleet-disclaimer{
-  margin-top:28px; font-size:.82rem; color:var(--ink-soft); max-width:62ch;
+  margin:28px auto 0; font-size:.82rem; color:var(--ink-soft); max-width:62ch;
   background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius-md); padding:20px 22px;
 }
 .fleet-disclaimer-lead{ font-weight:600; color:var(--ink); }
