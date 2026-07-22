@@ -429,7 +429,8 @@ section{ padding:96px 0; }
    Booking / final CTA
    ============================================================ */
 .booking{ background:var(--paper); }
-.booking .wrap{ display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:start; }
+.booking .wrap{ display:flex; justify-content:center; }
+.booking-copy{ max-width:560px; }
 .booking-copy .section-lead{ margin-top:16px; }
 .contact-list{ margin-top:28px; display:grid; gap:16px; }
 .contact-list li{ display:flex; gap:14px; align-items:flex-start; }
@@ -440,11 +441,6 @@ section{ padding:96px 0; }
 .contact-list strong{ display:block; font-size:.95rem; }
 .contact-list span{ display:block; color:var(--ink-soft); font-size:.9rem; margin-top:2px; }
 .booking-actions{ margin-top:30px; display:flex; gap:14px; flex-wrap:wrap; }
-
-.booking-form-card{
-  background:var(--paper-2); border-radius:var(--radius-lg); padding:32px; box-shadow:var(--shadow-card);
-}
-.booking-form-card h3{ font-size:1.25rem; }
 
 /* ============================================================
    Footer
@@ -464,7 +460,6 @@ section{ padding:96px 0; }
 }
 @media (max-width:900px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
 @media (max-width:560px){ .footer-grid{ grid-template-columns:1fr; } }
-@media (max-width:960px){ .booking .wrap{ grid-template-columns:1fr; } }
 @media (max-width:520px){ .field-row{ grid-template-columns:1fr; } }
 
 /* hero quote card: one-time entrance, no JS / scroll dependency */
@@ -727,4 +722,14 @@ section{ padding:96px 0; }
 .fleet-book:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
 .fleet-book:disabled:hover{ background:var(--plum); }
 
-.fleet-disclaimer{ margin-top:28px; font-size:.78rem; color:var(--ink-soft); max-width:70ch; }
+.fleet-disclaimer{
+  margin-top:28px; font-size:.82rem; color:var(--ink-soft); max-width:62ch;
+  background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius-md); padding:20px 22px;
+}
+.fleet-disclaimer-lead{ font-weight:600; color:var(--ink); }
+.fleet-disclaimer-list{ margin:12px 0 0; display:grid; gap:8px; }
+.fleet-disclaimer-list li{ padding-left:16px; position:relative; }
+.fleet-disclaimer-list li::before{
+  content:""; position:absolute; left:0; top:.6em; width:6px; height:6px; border-radius:50%; background:var(--gold);
+}
+.fleet-disclaimer-note{ margin:14px 0 0; padding-top:14px; border-top:1px dashed var(--line); font-style:italic; }

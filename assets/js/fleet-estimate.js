@@ -173,6 +173,11 @@
 
       setStatus('');
       updateFleetUI();
+
+      // The results (summary, map, live prices) land below the fold in the
+      // hero — bring them into view instead of leaving the user to notice
+      // and scroll down themselves.
+      document.getElementById('fleetResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
       tripState.ready = false;
       updateFleetUI();
