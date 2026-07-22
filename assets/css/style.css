@@ -426,23 +426,6 @@ section{ padding:96px 0; }
 }
 
 /* ============================================================
-   Booking / final CTA
-   ============================================================ */
-.booking{ background:var(--paper); }
-.booking .wrap{ display:flex; justify-content:center; }
-.booking-copy{ max-width:560px; }
-.booking-copy .section-lead{ margin-top:16px; }
-.contact-list{ margin-top:28px; display:grid; gap:16px; }
-.contact-list li{ display:flex; gap:14px; align-items:flex-start; }
-.contact-list .ico{
-  width:38px; height:38px; border-radius:10px; background:var(--plum-tint); color:var(--plum);
-  display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.contact-list strong{ display:block; font-size:.95rem; }
-.contact-list span{ display:block; color:var(--ink-soft); font-size:.9rem; margin-top:2px; }
-.booking-actions{ margin-top:30px; display:flex; gap:14px; flex-wrap:wrap; }
-
-/* ============================================================
    Footer
    ============================================================ */
 .site-footer{ background:var(--plum-deep); color:rgba(255,255,255,.8); padding:64px 0 28px; }

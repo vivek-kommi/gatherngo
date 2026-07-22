@@ -30,21 +30,40 @@ window.GNGFare = (() => {
     return m ? m[0] : null;
   };
 
+  // Rough fallback for when there's no postcode to go on at all — a plain
+  // place name like "Cambourne" or "Caxton". Nominatim's free-text search
+  // gives back a village/town-centre point, which is imprecise but good
+  // enough for a live mileage-based estimate; the driver confirms the exact
+  // pickup point before travel regardless.
+  const geocodeRough = async (address) => {
+    const res = await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
+      q: address, format: 'jsonv2', countrycodes: 'gb', limit: '1',
+    }), { headers: { 'Accept-Language': 'en-GB' } });
+    const list = await res.json();
+    const hit = list && list[0];
+    if (!hit) throw new Error(`Couldn't find "${address}" — try adding a postcode or nearby town.`);
+    return { lat: parseFloat(hit.lat), lon: parseFloat(hit.lon), charge: 0, label: address, isAirport: false };
+  };
+
   // Resolves an address to {lat, lon, charge, label, isAirport}. Airports
-  // resolve instantly from the shared dataset; everything else is geocoded
-  // from its postcode via postcodes.io, which is exact (no ambiguous
-  // free-text matching).
+  // resolve instantly from the shared dataset; a postcode (if present)
+  // geocodes exactly via postcodes.io; anything else — a rough place name
+  // with no postcode — still gets a best-effort rough pinpoint instead of
+  // failing outright, so the estimate still works.
   const geocode = async (address) => {
     const airport = findAirport(address);
     if (airport) {
       return { lat: airport.lat, lon: airport.lon, charge: airport.charge, label: airport.name, isAirport: true };
     }
     const postcode = extractPostcode(address);
-    if (!postcode) throw new Error(`Couldn't find a postcode in "${address}".`);
-    const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
-    const data = await res.json();
-    if (!data || !data.result) throw new Error(`"${postcode}" doesn't look like a real postcode.`);
-    return { lat: data.result.latitude, lon: data.result.longitude, charge: 0, label: postcode, isAirport: false };
+    if (postcode) {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
+      const data = await res.json();
+      if (data && data.result) {
+        return { lat: data.result.latitude, lon: data.result.longitude, charge: 0, label: postcode, isAirport: false };
+      }
+    }
+    return geocodeRough(address);
   };
 
   // Free public OSRM demo router — real driving distance/time, no API key.

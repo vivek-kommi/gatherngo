@@ -67,19 +67,15 @@
 
   const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  // A location field is only ever "verified" — allowed to pass form
-  // validation — when its value was set by picking an airport terminal or a
-  // real house-numbered address from the list. Typing something that merely
-  // looks right, completing just the postcode, or picking a street name
-  // with no house number attached, is not enough: we want a genuine, real,
-  // deliverable address, not just a road.
-  const applyVerified = (input, ok, message) => {
+  // Tracks whether a field's value came from picking an airport terminal or
+  // a real house-numbered address, vs. free-typed text, a bare postcode, or
+  // a street with no number. This is informational only — it doesn't block
+  // submission — since even a rough place name ("Cambourne", "Caxton") should
+  // still get a fare estimate (fare-engine.js falls back to a rough
+  // place-level geocode when there's no postcode to go on).
+  const applyVerified = (input, ok) => {
     input.dataset.verified = ok ? 'true' : 'false';
-    if (ok || input.value.trim() === '') {
-      input.setCustomValidity('');
-    } else {
-      input.setCustomValidity(message || 'Choose a full address from the list, or an airport terminal.');
-    }
+    input.setCustomValidity('');
   };
 
   // Builds a clean "<street>, <town>, <POSTCODE>" line out of a Nominatim
@@ -304,23 +300,23 @@
       }
     };
 
-    const fillValue = (value, verified, message) => {
+    const fillValue = (value, verified) => {
       input.value = value;
       lastFilled = value;
-      applyVerified(input, verified, message);
+      applyVerified(input, verified);
       close();
       if (document.activeElement !== input) input.focus();
     };
 
     // Airport terminals and house-numbered addresses are complete, real,
-    // deliverable places — verified. Completing just the postcode, or
-    // picking a street with no house number attached, isn't enough: the
-    // value still needs a number added before it's a real address.
+    // deliverable places. Completing just the postcode, or picking a street
+    // with no house number attached, gives a rougher (but still usable —
+    // see fare-engine.js) result.
     const chooseAirport = (airport) => fillValue(airport.value, true);
     const chooseAddress = (addr) => fillValue(addr.main, true);
     const choosePostcode = (postcode) => fillValue(replaceTrailingToken(input.value, postcode), false);
     const chooseStreet = (addr) => {
-      fillValue(addr.main, false, 'Add your house number before the street name.');
+      fillValue(addr.main, false);
       // Cursor at the very start — adding the number is a one-step edit,
       // not a find-the-right-spot-and-retype.
       input.setSelectionRange(0, 0);
