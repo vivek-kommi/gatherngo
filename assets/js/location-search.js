@@ -97,13 +97,17 @@
 
   // When a query is just a place/area name ("Uxbridge") Nominatim mostly
   // returns the town/suburb boundary itself, which formatNominatimResult
-  // rejects (no street). Rather than showing nothing, pull the area's own
-  // name back out so the empty state can tell the user what to add next.
+  // rejects (no street). Rather than telling the user their input won't
+  // work, offer the area itself as a usable rough pickup point — its own
+  // name is plenty for fare-engine.js's rough-geocode fallback to place a
+  // pin at the town/city centre and compute a live (if imprecise) quote.
   const AREA_TYPES = ['town', 'village', 'city', 'suburb', 'city_district', 'county', 'hamlet'];
-  const extractAreaHint = (list) => {
+  const extractArea = (list) => {
     for (const item of (list || [])) {
       if (AREA_TYPES.includes(item.addresstype)) {
-        return item.name || (item.display_name || '').split(',')[0] || null;
+        const name = item.name || (item.display_name || '').split(',')[0] || null;
+        if (!name) continue;
+        return { main: name, sub: 'Use the town/city centre as a rough pickup point' };
       }
     }
     return null;
@@ -129,7 +133,7 @@
         return {
           addresses: addresses.slice(0, 10),
           streets: streets.slice(0, 10),
-          areaHint: (addresses.length || streets.length) ? null : extractAreaHint(list),
+          area: (addresses.length || streets.length) ? null : extractArea(list),
         };
       });
   };
@@ -321,15 +325,17 @@
       // not a find-the-right-spot-and-retype.
       input.setSelectionRange(0, 0);
     };
+    const chooseArea = (area) => fillValue(area.main, false);
 
     const selectItem = (item) => {
       if (item.type === 'airport') chooseAirport(item.data);
       else if (item.type === 'address') chooseAddress(item.data);
       else if (item.type === 'street') chooseStreet(item.data);
+      else if (item.type === 'area') chooseArea(item.data);
       else choosePostcode(item.data);
     };
 
-    const render = (airportMatches, addressMatches, streetMatches, postcodeMatches, loading, notice) => {
+    const render = (airportMatches, addressMatches, streetMatches, postcodeMatches, area, loading, notice) => {
       items = [];
       let html = '';
 
@@ -363,6 +369,15 @@
           items.push({ type: 'postcode', data: pc });
           html += `<li class="loc-option" role="option" tabindex="-1">${PIN_ICON}<span class="loc-text"><span class="loc-main">${escapeHtml(pc)}</span></span></li>`;
         });
+      }
+
+      // A place name with no specific street match ("Wolverhampton") still
+      // gets a usable pin — its own centre — rather than being told to type
+      // more. Only offered when nothing more specific turned up.
+      if (area && !addressMatches.length && !streetMatches.length) {
+        html += '<li class="loc-group-label" role="presentation">Rough pickup point</li>';
+        items.push({ type: 'area', data: area });
+        html += `<li class="loc-option" role="option" tabindex="-1">${PIN_ICON}<span class="loc-text"><span class="loc-main">${escapeHtml(area.main)}</span><span class="loc-sub">${escapeHtml(area.sub)}</span></span></li>`;
       }
 
       if (!items.length) {
@@ -402,7 +417,7 @@
 
       if (!candidate && !wantsStreetSearch) {
         if (!airportMatches.length && trimmed.length < 2) { close(); return; }
-        render(airportMatches, [], [], [], false);
+        render(airportMatches, [], [], [], null, false);
         return;
       }
 
@@ -412,7 +427,7 @@
       let nearbyAddresses = [];
       let nearbyStreets = [];
       let postcodeMatches = [];
-      let areaHint = null;
+      let area = null;
       let postcodeResult = null; // { invalid, postcode, locality } once the full-postcode lookup resolves
       let pending = 0;
       const isCurrent = () => myToken === requestToken;
@@ -434,24 +449,24 @@
       const mergedAddresses = () => dedupe(nominatimAddresses, nearbyAddresses);
       const mergedStreets = () => dedupe(nominatimStreets, nearbyStreets);
 
+      // A notice only ever appears when there's truly nothing to offer —
+      // not even a rough area pin — since typing a bare place name is
+      // handled by the "Rough pickup point" option in render() instead.
       const buildNotice = () => {
-        if (mergedAddresses().length || mergedStreets().length) return null;
+        if (mergedAddresses().length || mergedStreets().length || area) return null;
         if (postcodeResult && postcodeResult.invalid) {
           return `We don't recognise "${escapeHtml(candidate)}" as a postcode — check it's typed correctly.`;
         }
         if (postcodeResult && !postcodeResult.invalid) {
           const where = postcodeResult.locality ? ` (${escapeHtml(postcodeResult.locality)})` : '';
-          return `${escapeHtml(postcodeResult.postcode)}${where} is a real postcode, but we couldn't find named streets for it automatically — type your house number and street name before the postcode.`;
-        }
-        if (areaHint) {
-          return `"${escapeHtml(areaHint)}" is an area, not a specific address — add a street name or postcode, e.g. "High Street, ${escapeHtml(areaHint)}".`;
+          return `${escapeHtml(postcodeResult.postcode)}${where} is a real postcode — you can still get a quote using just the postcode, or type a house number and street name for a precise one.`;
         }
         return null;
       };
 
-      const rerender = (loading) => render(airportMatches, mergedAddresses(), mergedStreets(), postcodeMatches, loading, buildNotice());
+      const rerender = (loading) => render(airportMatches, mergedAddresses(), mergedStreets(), postcodeMatches, area, loading, buildNotice());
 
-      render(airportMatches, [], [], [], true);
+      render(airportMatches, [], [], [], null, true);
 
       if (isFullPostcode) {
         // A complete, real postcode — confirm it and look for streets
@@ -495,7 +510,7 @@
             if (!isCurrent()) return;
             nominatimAddresses = result.addresses;
             nominatimStreets = result.streets;
-            areaHint = result.areaHint;
+            area = result.area;
           })
           .catch(() => {})
           .finally(() => {
