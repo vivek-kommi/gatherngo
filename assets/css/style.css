@@ -358,7 +358,7 @@ section{ padding:96px 0; }
 .service-card{
   background:var(--paper-2); border-radius:var(--radius-lg); overflow:hidden;
   box-shadow:var(--shadow-card); display:flex; flex-direction:column;
-  transition:transform .25s ease, box-shadow .25s ease;
+  transition:opacity .55s ease, transform .25s ease, box-shadow .25s ease;
 }
 .service-card:hover{ transform:translateY(-6px); box-shadow:0 30px 55px -18px rgba(20,16,40,.34); }
 .service-media{ aspect-ratio:4/3; overflow:hidden; }
@@ -481,6 +481,33 @@ section{ padding:96px 0; }
 @media (max-width:720px){ .scroll-cue{ display:none; } }
 
 /* ============================================================
+   Decor page — booking
+   ============================================================ */
+.booking{ background:var(--paper); }
+.booking .wrap{ display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-items:start; }
+.booking-copy{ max-width:46ch; }
+.contact-list{ margin-top:28px; display:grid; gap:18px; }
+.contact-list li{ display:flex; align-items:flex-start; gap:14px; }
+.contact-list .ico{
+  width:40px; height:40px; border-radius:12px; flex-shrink:0;
+  background:var(--plum-tint); color:var(--plum);
+  display:flex; align-items:center; justify-content:center;
+}
+.contact-list strong{ display:block; font-size:.98rem; }
+.contact-list span{ display:block; font-size:.82rem; color:var(--ink-soft); margin-top:2px; }
+.contact-list a:hover strong{ color:var(--plum); }
+.booking-actions{ display:flex; gap:14px; margin-top:32px; flex-wrap:wrap; }
+
+.booking-form-card{
+  background:var(--paper-2); color:var(--ink); border-radius:var(--radius-lg);
+  padding:28px 28px 30px; box-shadow:var(--shadow-card); border-top:4px solid var(--gold);
+}
+.booking-form-card .eyebrow{ color:var(--plum); font-weight:700; margin-bottom:4px; }
+.booking-form-card h3{ font-size:1.1rem; }
+
+@media (max-width:900px){ .booking .wrap{ grid-template-columns:1fr; gap:32px; } }
+
+/* ============================================================
    Capability marquee
    ============================================================ */
 .marquee{ background:var(--ink); overflow:hidden; padding:20px 0; }
@@ -515,7 +542,7 @@ section{ padding:96px 0; }
   display:block; width:100%; break-inside:avoid; margin-bottom:20px;
   border-radius:16px; overflow:hidden; position:relative; border:none; padding:0; background:var(--ink);
   cursor:zoom-in; box-shadow:var(--shadow-soft);
-  transition:transform .3s ease, box-shadow .3s ease;
+  transition:opacity .55s ease, transform .3s ease, box-shadow .3s ease;
 }
 .gallery-item:hover{ transform:translateY(-4px); box-shadow:var(--shadow-card); }
 .gallery-item img{ width:100%; display:block; transition:transform .5s ease; }
@@ -553,7 +580,7 @@ section{ padding:96px 0; }
   position:absolute; left:0; right:0; bottom:24px; text-align:center; color:rgba(255,255,255,.7);
   font-family:var(--font-mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase;
 }
-@media (max-width:640px){ .lightbox-nav{ width:38px; height:38px; } .lightbox{ padding:20px; } }
+@media (max-width:640px){ .lightbox{ padding:16px; } }
 
 /* ============================================================
    Packages
@@ -562,7 +589,7 @@ section{ padding:96px 0; }
 .package-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:24px; }
 .package-card{
   background:rgba(255,255,255,.04); border:1px solid var(--line-on-ink); border-radius:var(--radius-lg);
-  padding:28px 24px; transition:transform .2s ease, background .2s ease;
+  padding:28px 24px; transition:opacity .55s ease, transform .2s ease, background .2s ease;
 }
 .package-card:hover{ transform:translateY(-4px); background:rgba(255,255,255,.07); }
 .package-icon{
@@ -716,3 +743,110 @@ section{ padding:96px 0; }
   content:""; position:absolute; left:0; top:.6em; width:6px; height:6px; border-radius:50%; background:var(--gold);
 }
 .fleet-disclaimer-note{ margin:14px 0 0; padding-top:14px; border-top:1px dashed var(--line); font-style:italic; }
+
+/* ============================================================
+   Scroll reveal — fade/slide content in as it enters view
+   ============================================================ */
+.section-head, .pass, .process-step, .hero-copy, .decor-hero-copy, .testimonial .wrap > *{
+  transition:opacity .6s cubic-bezier(.16,.8,.3,1), transform .6s cubic-bezier(.16,.8,.3,1);
+}
+.reveal{ opacity:0; transform:translateY(28px); }
+.reveal.is-visible{ opacity:1; transform:none; }
+.reveal-fade{ opacity:0; }
+.reveal-fade.is-visible{ opacity:1; }
+.reveal, .reveal-fade{ transition-delay:var(--reveal-delay,0ms); }
+
+/* ============================================================
+   Scroll-spy — highlight the nav link for the section in view
+   ============================================================ */
+.main-nav a.is-current::after{ transform:scaleX(1); transform-origin:left; }
+.main-nav a.is-current{ color:var(--gold); }
+.site-header.is-scrolled .main-nav a.is-current{ color:var(--plum); }
+
+/* ============================================================
+   Floating WhatsApp button — quick contact, appears after the hero
+   ============================================================ */
+.quick-whatsapp{
+  position:fixed; right:22px; bottom:22px; z-index:90;
+  width:58px; height:58px; border-radius:50%;
+  background:#25d366; color:var(--white); box-shadow:0 12px 28px -8px rgba(20,16,40,.5);
+  display:flex; align-items:center; justify-content:center;
+  transform:scale(0) translateY(12px); opacity:0; pointer-events:none;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1), opacity .25s ease, box-shadow .2s ease;
+}
+.quick-whatsapp.is-visible{ transform:scale(1) translateY(0); opacity:1; pointer-events:auto; }
+.quick-whatsapp:hover{ box-shadow:0 16px 34px -8px rgba(20,16,40,.6); background:#20bd5a; }
+.quick-whatsapp:active{ transform:scale(.94); }
+@media (max-width:600px){
+  .quick-whatsapp{ right:16px; bottom:16px; width:54px; height:54px; }
+}
+
+/* ============================================================
+   Micro-interactions
+   ============================================================ */
+.btn-primary, .btn-gold{ transition:transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease; }
+.btn-primary:hover, .btn-gold:hover{ transform:translateY(-2px); }
+.btn-primary:active, .btn-gold:active{ transform:translateY(0); }
+.filter-tab:hover{ transform:translateY(-1px); }
+.checkbox-pill:hover{ border-color:var(--plum); }
+.footer-col a{ transition:color .15s ease; }
+.process-num{ transition:transform .2s ease, background .2s ease, color .2s ease; }
+.process-step:hover .process-num{ transform:scale(1.08); background:var(--plum); color:var(--white); }
+
+/* ============================================================
+   Mobile — size everything up a notch for touch and legibility
+   ============================================================ */
+@media (max-width:600px){
+  body{ font-size:16.5px; }
+  h2.section-title{ font-size:clamp(1.85rem, 7vw, 2.3rem); }
+  .section-lead{ font-size:1.03rem; }
+  .eyebrow{ font-size:.76rem; }
+
+  .btn{ padding:16px 26px; font-size:1rem; }
+  .btn-sm{ padding:12px 20px; font-size:.92rem; }
+  .nav-toggle{ padding:10px; }
+
+  .field label{ font-size:.72rem; }
+  .field input, .field select{ padding:14px 15px; font-size:1.05rem; }
+  .field-hint{ font-size:.78rem; }
+  .checkbox-pill{ padding:12px 17px; font-size:.94rem; }
+  .checkbox-pill span{ font-size:.76rem; }
+
+  .main-nav a{ font-size:1.2rem; padding:16px 4px; }
+
+  .service-body{ padding:24px 22px 26px; gap:14px; }
+  .service-body h3{ font-size:1.32rem; }
+  .service-body p{ font-size:1rem; }
+  .link-arrow{ font-size:1rem; }
+
+  .pass-top h3{ font-size:1.16rem; }
+  .pass-top p{ font-size:.94rem; }
+  .pass-code{ font-size:.76rem; }
+
+  .package-card h3{ font-size:1.2rem; }
+  .package-card p{ font-size:.96rem; }
+  .package-from{ font-size:.76rem; }
+
+  .process-step h3{ font-size:1.12rem; }
+  .process-step p{ font-size:.94rem; }
+  .process-num{ width:56px; height:56px; }
+
+  .filter-tab{ padding:11px 20px; font-size:.78rem; }
+
+  .fleet-card-head h3{ font-size:1.1rem; }
+  .cap-people{ font-size:.96rem; }
+  .cap-luggage{ font-size:.84rem; }
+  .fare-row{ font-size:.9rem; }
+  .fare-row .fare-value{ font-size:1.12rem; }
+  .fleet-disclaimer{ font-size:.87rem; padding:20px 18px; }
+
+  .footer-brand p{ font-size:.96rem; }
+  .footer-col a{ font-size:1.02rem; }
+  .footer-col h4{ font-size:.74rem; }
+  .footer-bottom{ font-size:.84rem; }
+
+  .contact-list strong{ font-size:1.04rem; }
+  .contact-list span{ font-size:.86rem; }
+
+  .lightbox-close, .lightbox-nav{ width:50px; height:50px; }
+}
