@@ -49,15 +49,45 @@
     statusEl.className = 'fare-status' + (tone ? ` is-${tone}` : '');
   };
 
-  // Default to right now — still fully editable to any date/time, just a
-  // convenient starting point (e.g. bumping the time forward an hour).
+  // Default to an hour from now — still fully editable to any date/time,
+  // just a convenient starting point for the most common case (booking
+  // shortly ahead rather than immediately).
   const dateInput = document.getElementById('fareDate');
   const timeInput = document.getElementById('fareTime');
   if (dateInput && timeInput && !dateInput.value && !timeInput.value) {
-    const now = new Date();
+    const soon = new Date(Date.now() + 60 * 60 * 1000);
     const pad = (n) => String(n).padStart(2, '0');
-    dateInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    timeInput.value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    dateInput.value = `${soon.getFullYear()}-${pad(soon.getMonth() + 1)}-${pad(soon.getDate())}`;
+    timeInput.value = `${pad(soon.getHours())}:${pad(soon.getMinutes())}`;
+  }
+
+  // Default drop-off to Heathrow T2 — the exact value string used elsewhere
+  // so it still matches the airport dataset for the airport fee/label.
+  const pickupInput = document.getElementById('farePickup');
+  const dropoffInput = document.getElementById('fareDropoff');
+  if (dropoffInput && !dropoffInput.value) {
+    dropoffInput.value = 'London Heathrow Airport, Terminal 2, TW6 1EW';
+  }
+
+  // Default pickup to the visitor's current location, reverse-geocoded to
+  // a readable address — silently skipped if location isn't available or
+  // permission is declined, since it's just a convenience starting point.
+  if (pickupInput && !pickupInput.value && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      if (pickupInput.value) return; // user already started typing
+      try {
+        const { latitude, longitude } = pos.coords;
+        const res = await fetch('https://nominatim.openstreetmap.org/reverse?' + new URLSearchParams({
+          lat: latitude, lon: longitude, format: 'jsonv2',
+        }), { headers: { 'Accept-Language': 'en-GB' } });
+        const data = await res.json();
+        if (data && data.display_name && !pickupInput.value) {
+          pickupInput.value = data.display_name;
+        }
+      } catch (err) {
+        // no connectivity to the geocoder — leave the field blank
+      }
+    }, () => {}, { timeout: 8000 });
   }
 
   const tripState = { ready: false };
