@@ -25,8 +25,11 @@ window.GNGFare = (() => {
       || null;
   };
 
+  // No end-of-string anchor — a reverse-geocoded "current location" address
+  // (e.g. "...CB2 3HH, United Kingdom") has trailing text after the
+  // postcode, and would otherwise never match.
   const extractPostcode = (address) => {
-    const m = address.match(/[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}$/);
+    const m = address.match(/[A-Za-z]{1,2}[0-9][A-Za-z0-9]?\s?[0-9][A-Za-z]{2}\b/);
     return m ? m[0] : null;
   };
 
