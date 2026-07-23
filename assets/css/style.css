@@ -429,6 +429,32 @@ section{ padding:96px 0; }
 }
 
 /* ============================================================
+   Scrolling testimonials — riders' reviews, straight from Google
+   ============================================================ */
+.testimonial-scroll{ background:var(--ink); overflow:hidden; padding:56px 0; }
+.testimonial-track{ display:flex; width:max-content; gap:20px; animation:marquee 55s linear infinite; }
+.testimonial-scroll:hover .testimonial-track{ animation-play-state:paused; }
+.testimonial-card{
+  width:360px; flex-shrink:0; background:rgba(255,255,255,.04); border:1px solid var(--line-on-ink);
+  border-radius:var(--radius-lg); padding:26px 24px;
+}
+.testimonial-card .stars{ font-size:1rem; }
+.testimonial-card blockquote{
+  font-family:var(--font-display); font-weight:500; font-style:italic; color:var(--white);
+  font-size:1rem; line-height:1.5; margin:14px 0 0;
+}
+.testimonial-card cite{
+  display:block; margin-top:16px; font-style:normal; font-family:var(--font-mono);
+  font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.55);
+}
+@media (max-width:600px){
+  .testimonial-scroll{ padding:44px 0; }
+  .testimonial-card{ width:280px; padding:22px 20px; }
+  .testimonial-card blockquote{ font-size:.92rem; }
+}
+@media (prefers-reduced-motion: reduce){ .testimonial-track{ animation:none; flex-wrap:wrap; justify-content:center; padding-inline:24px; } }
+
+/* ============================================================
    Footer
    ============================================================ */
 .site-footer{ background:var(--plum-deep); color:rgba(255,255,255,.8); padding:64px 0 28px; }
